@@ -47,61 +47,70 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900 flex flex-col items-center justify-center p-6 text-zinc-800 dark:text-zinc-100">
-      <main className="w-full max-w-md flex flex-col items-center text-center">
+    <div className="relative min-h-screen flex flex-col items-center justify-center p-6 overflow-hidden">
+      {/* 배경 그라데이션 */}
+      <div className="absolute inset-0 bg-linear-to-br from-blue-950 via-blue-900 to-cyan-900" />
+      {/* 물결 느낌 블러 장식 */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-cyan-500/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-blue-500/20 rounded-full blur-3xl" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-teal-600/10 rounded-full blur-3xl" />
+
+      <main className="relative z-10 w-full max-w-md flex flex-col items-center text-center">
         {/* 프로필 아바타 */}
-        <div className="relative mb-5 group">
-          <div className="w-28 h-28 rounded-full bg-linear-to-tr from-teal-500 via-cyan-500 to-blue-600 p-1 shadow-lg shadow-cyan-500/20 transition-transform duration-300 group-hover:scale-105">
-            <div className="w-full h-full rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center">
-              <span className="text-3xl font-extrabold bg-linear-to-r from-teal-600 via-cyan-600 to-blue-600 dark:from-teal-400 dark:via-cyan-400 dark:to-blue-400 bg-clip-text text-transparent">
+        <div className="relative mb-6 group">
+          <div className="w-28 h-28 rounded-full bg-linear-to-tr from-cyan-400 via-blue-400 to-blue-600 p-[3px] shadow-2xl shadow-blue-900/60 transition-transform duration-300 group-hover:scale-105">
+            <div className="w-full h-full rounded-full bg-blue-950 flex items-center justify-center">
+              <span className="text-3xl font-extrabold bg-linear-to-r from-cyan-300 via-sky-300 to-blue-300 bg-clip-text text-transparent">
                 노
               </span>
             </div>
           </div>
-          <span className="absolute bottom-1 right-2 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-zinc-900 rounded-full" title="Active"></span>
+          <span className="absolute bottom-1 right-2 w-4 h-4 bg-emerald-400 border-2 border-blue-950 rounded-full shadow-lg" title="Active" />
         </div>
 
         {/* 이름 및 뱃지 */}
-        <div className="flex items-center gap-2 mb-2">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+        <div className="flex items-center gap-2 mb-3">
+          <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-md">
             노기훈
           </h1>
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-800 dark:bg-cyan-950/70 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800">
-            ⚓ Navigator & Dev
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-400/20 text-cyan-200 border border-cyan-400/40 backdrop-blur-sm">
+            ⚓ Navigator &amp; Dev
           </span>
         </div>
 
         {/* 소개글 */}
-        <p className="text-base text-zinc-600 dark:text-zinc-300 max-w-sm leading-relaxed mb-8">
-          바다 위에서는 안전한 항로를 이끄는 <span className="font-semibold text-zinc-800 dark:text-zinc-100">정부 항해사</span>이자,
-          코드 위에서는 바이브 코딩으로 새로운 가능성을 개척하는 <span className="font-semibold text-cyan-600 dark:text-cyan-400">개발자</span> 노기훈입니다. 🌊
+        <p className="text-sm text-blue-100/80 max-w-sm leading-relaxed mb-10">
+          바다 위에서는 안전한 항로를 이끄는{" "}
+          <span className="font-semibold text-white">정부 항해사</span>이자,
+          코드 위에서는 바이브 코딩으로 새로운 가능성을 개척하는{" "}
+          <span className="font-semibold text-cyan-300">개발자</span> 노기훈입니다. 🌊
         </p>
 
         {/* 링크 목록 */}
-        <div className="w-full flex flex-col gap-3.5 mb-10">
+        <div className="w-full flex flex-col gap-3 mb-10">
           {links.map((link) => (
             <a
               key={link.title}
               href={link.url}
               target={link.url.startsWith("http") ? "_blank" : undefined}
               rel="noopener noreferrer"
-              className="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800 shadow-xs hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200 group"
+              className="flex items-center justify-between p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-cyan-400/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-cyan-900/30 transition-all duration-200 group"
             >
               <div className="flex items-center gap-3.5">
-                <div className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/50 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                <div className="p-2.5 rounded-xl bg-white/10 text-cyan-200 group-hover:bg-cyan-400/20 group-hover:text-cyan-100 transition-colors">
                   {link.icon}
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  <div className="text-sm font-semibold text-white group-hover:text-cyan-200 transition-colors">
                     {link.title}
                   </div>
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                  <div className="text-xs text-blue-200/70">
                     {link.description}
                   </div>
                 </div>
               </div>
               <svg
-                className="w-4 h-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200 group-hover:translate-x-0.5 transition-all"
+                className="w-4 h-4 text-blue-300/60 group-hover:text-cyan-300 group-hover:translate-x-0.5 transition-all"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -113,7 +122,7 @@ export default function Home() {
         </div>
 
         {/* 푸터 */}
-        <footer className="text-xs text-zinc-400 dark:text-zinc-600">
+        <footer className="text-xs text-blue-300/50">
           © {new Date().getFullYear()} 노기훈 · MyLink
         </footer>
       </main>
