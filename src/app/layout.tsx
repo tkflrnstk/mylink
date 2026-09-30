@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "노기훈 | 정부 항해사 & 개발자",
-  description: "바다의 항로를 개척하는 정부 항해사이자, 코드의 파도를 항해하는 개발자 노기훈의 마이링크입니다.",
+  title: "Nintendo.com (2001 Console Hardware) — Governor Noh's MyLink",
+  description: "Nintendo.com circa 2001 periwinkle metal faceplate interface for Governor Noh (Navigator & Developer).",
 };
 
 export default function RootLayout({

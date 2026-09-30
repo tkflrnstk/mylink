@@ -8,51 +8,119 @@
 }
 
 :root {
-  --background: #030b1a;
-  --foreground: #e0eaff;
+  --canvas: #7a8aba;
+  --periwinkle: #8ba1d4;
+  --sky: #9fbee7;
+  --lavender: #acace7;
+  --ice: #c0d5e6;
+  --chrome-indigo: #3d4f97;
+  --muted-indigo: #60619c;
+  --carbon: #21242e;
+  --platinum: #dedede;
+  --primary-red: #e60012;
+  --signal-orange: #f68d1f;
+  --amber: #ecab37;
+  --nav-gold: #e48600;
+  --systems-teal: #206479;
+  
+  --background: #7a8aba;
+  --foreground: #21242e;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--canvas);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
+  overflow-x: auto;
 }
 
-/* 부드러운 파도 물결 키프레임 */
-@keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -20px) scale(1.05); }
-  66% { transform: translate(-20px, 15px) scale(0.95); }
+/* 2001 Console Hardware - Halftone Speaker Grille Texture */
+.carbon-halftone {
+  background-color: #21242e;
+  background-image: radial-gradient(#3a3e4f 20%, transparent 20%);
+  background-size: 4px 4px;
 }
 
-@keyframes float-slow {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-40px, 25px) scale(1.08); }
+/* Beveled Metal Plate Treatments */
+.bevel-plate {
+  background-color: #7a8aba;
+  border-top: 1px solid #b2c2eb;
+  border-left: 1px solid #b2c2eb;
+  border-right: 2px solid #3d4f97;
+  border-bottom: 2px solid #3d4f97;
 }
 
-@keyframes shimmer {
-  0% { opacity: 0.4; }
-  50% { opacity: 0.7; }
-  100% { opacity: 0.4; }
+.bevel-plate-raised {
+  background-color: #8ba1d4;
+  border-top: 1px solid #d0deff;
+  border-left: 1px solid #d0deff;
+  border-right: 2px solid #3d4f97;
+  border-bottom: 2px solid #3d4f97;
 }
 
-@keyframes pulse-ring {
-  0% { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(1.5); opacity: 0; }
+.bevel-inset {
+  background-color: #dedede;
+  border-top: 2px solid #3d4f97;
+  border-left: 2px solid #3d4f97;
+  border-right: 1px solid #ffffff;
+  border-bottom: 1px solid #ffffff;
 }
 
-.animate-float {
-  animation: float 8s ease-in-out infinite;
+.bevel-button-amber {
+  background-color: #ecab37;
+  border-top: 1px solid #ffe391;
+  border-left: 1px solid #ffe391;
+  border-right: 2px solid #9e690c;
+  border-bottom: 2px solid #9e690c;
+  color: #21242e;
+}
+.bevel-button-amber:active {
+  border-top: 2px solid #9e690c;
+  border-left: 2px solid #9e690c;
+  border-right: 1px solid #ffe391;
+  border-bottom: 1px solid #ffe391;
+  background-color: #e48600;
 }
 
-.animate-float-slow {
-  animation: float-slow 12s ease-in-out infinite;
+.bevel-button-orange {
+  background-color: #f68d1f;
+  border-top: 1px solid #ffc182;
+  border-left: 1px solid #ffc182;
+  border-right: 2px solid #a84f00;
+  border-bottom: 2px solid #a84f00;
+  color: #ffffff;
+}
+.bevel-button-orange:active {
+  border-top: 2px solid #a84f00;
+  border-left: 2px solid #a84f00;
+  border-right: 1px solid #ffc182;
+  border-bottom: 1px solid #ffc182;
+  background-color: #e48600;
 }
 
-.animate-shimmer {
-  animation: shimmer 4s ease-in-out infinite;
+/* Chamfered (Cut-Corner) Geometry */
+.chamfer-card {
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
 }
 
-.animate-pulse-ring {
-  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* Console Box-Art Display Typography */
+.box-art-text {
+  color: #ffffff;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  text-shadow: 
+    2px 2px 0px #21242e,
+    -1px -1px 0px #3d4f97,
+    2px -1px 0px #21242e,
+    -1px 2px 0px #21242e,
+    4px 4px 0px rgba(33, 36, 46, 0.6);
+}
+
+/* Circuit-board texture overlay for Systems/Hero field */
+.circuit-overlay {
+  background-image: 
+    linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 16px 16px;
 }
