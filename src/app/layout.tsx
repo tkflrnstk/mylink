@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nintendo.com (2001 Console Hardware) — Governor Noh's MyLink",
-  description: "Nintendo.com circa 2001 periwinkle metal faceplate interface for Governor Noh (Navigator & Developer).",
+  title: "노기훈 | 마이링크 (정부 항해사 & 개발자)",
+  description: "정부 항해사이자 바이브 코딩 개발자 노기훈의 레트로 메탈 프로필 마이링크 페이지입니다.",
 };
 
 export default function RootLayout({
