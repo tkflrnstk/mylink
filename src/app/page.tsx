@@ -15,7 +15,7 @@ export default function Home() {
     {
       cat: "DEV LOG",
       date: "SEP 29",
-      title: "Refactored Next.js 16 App Router & Hardware UI System",
+      title: "Refactored Next.js 16 App Router & Responsive Mobile UI",
     },
     {
       cat: "VIBE LOG",
@@ -56,31 +56,29 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#7a8aba] text-[#21242e] font-sans p-2 sm:p-6 flex flex-col items-center select-none">
+    <div className="min-h-screen bg-[#7a8aba] text-[#21242e] font-sans p-2 sm:p-4 md:p-6 flex flex-col items-center select-none overflow-x-hidden">
       
       {/* ─────────────────────────────────────────────────────────────
-          MAIN CHASSIS CONTAINER (~830px Fixed Desktop Target)
+          MAIN CHASSIS CONTAINER (~830px Responsive Mobile & Desktop)
       ───────────────────────────────────────────────────────────── */}
       <div className="w-full max-w-[830px] flex flex-col gap-2">
 
         {/* 1. MASTHEAD : Mascot Speech Bubble & Search Module */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-1">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 px-1">
           {/* Mascot & Speech Bubble */}
           <div className="flex items-center gap-2">
-            {/* Mario/Navigator Pixel Badge */}
-            <div className="w-10 h-10 bg-[#e60012] border-2 border-[#21242e] rounded-full flex items-center justify-center text-white text-xl shadow-sm">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[#e60012] border-2 border-[#21242e] rounded-full flex items-center justify-center text-white text-lg sm:text-xl shadow-sm shrink-0">
               ⚓
             </div>
-            {/* Speech Bubble */}
-            <div className="relative bg-white border-2 border-[#21242e] rounded-xl px-3 py-1.5 shadow-xs text-xs font-bold text-[#21242e]">
+            <div className="relative bg-white border-2 border-[#21242e] rounded-xl px-2.5 py-1 shadow-xs text-[11px] sm:text-xs font-bold text-[#21242e] leading-snug">
               <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-8 border-r-[#21242e]" />
-              Welcome to Governor Noh's Machine! Welcome to Nintendo.com!
+              Welcome to Governor Noh's Machine!
             </div>
           </div>
 
           {/* Search Module */}
-          <div className="flex items-center gap-1 bg-[#8ba1d4] p-1 border border-[#3d4f97] rounded-xs text-xs">
-            <span className="font-bold text-[10px] text-[#3d4f97] uppercase tracking-wider px-1">
+          <div className="flex items-center gap-1 bg-[#8ba1d4] p-1 border border-[#3d4f97] rounded-xs text-xs overflow-x-auto">
+            <span className="font-bold text-[10px] text-[#3d4f97] uppercase tracking-wider px-1 shrink-0">
               Search:
             </span>
             <input
@@ -88,36 +86,36 @@ export default function Home() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Keywords..."
-              className="w-28 sm:w-36 bg-white border border-[#3d4f97] px-1.5 py-0.5 text-xs text-[#21242e] focus:outline-none"
+              className="w-24 sm:w-32 bg-white border border-[#3d4f97] px-1.5 py-0.5 text-xs text-[#21242e] focus:outline-none shrink-0"
             />
-            <select className="bg-white border border-[#21242e] text-[11px] font-bold px-1 py-0.5">
+            <select className="bg-white border border-[#21242e] text-[11px] font-bold px-1 py-0.5 shrink-0">
               <option>All</option>
               <option>Systems</option>
               <option>Games</option>
             </select>
-            <button className="bevel-button-amber px-2 py-0.5 font-bold text-[11px] uppercase cursor-pointer">
+            <button className="bevel-button-amber px-2 py-0.5 font-bold text-[11px] uppercase cursor-pointer shrink-0">
               GO
             </button>
           </div>
         </div>
 
         {/* 2. DUAL NAVIGATION BARS */}
-        <div className="flex flex-col border-2 border-[#21242e] shadow-md">
+        <div className="flex flex-col border-2 border-[#21242e] shadow-md overflow-hidden">
           {/* Primary Nav (Carbon Navy Slab with Halftone Texture) */}
-          <div className="carbon-halftone px-3 py-2 flex flex-wrap items-center justify-between border-b border-[#3d4f97] gap-2">
+          <div className="carbon-halftone px-2 sm:px-3 py-2 flex items-center justify-between border-b border-[#3d4f97] gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
             
             {/* Nintendo Racetrack Pill Logo */}
-            <div className="bg-white rounded-full px-3 py-1 border-2 border-[#e60012] flex items-center shadow-xs">
-              <span className="text-[#e60012] font-black italic tracking-tighter text-sm">
+            <div className="bg-white rounded-full px-2.5 py-0.5 border-2 border-[#e60012] flex items-center shadow-xs shrink-0">
+              <span className="text-[#e60012] font-black italic tracking-tighter text-xs sm:text-sm">
                 Nintendo
               </span>
-              <span className="text-[10px] font-bold text-[#21242e] ml-1 uppercase">
+              <span className="text-[9px] font-bold text-[#21242e] ml-1 uppercase">
                 .com
               </span>
             </div>
 
             {/* Gold Section Navigation Links */}
-            <div className="flex items-center gap-3 sm:gap-5 text-xs font-bold tracking-wider uppercase">
+            <div className="flex items-center gap-3 sm:gap-5 text-xs font-bold tracking-wider uppercase shrink-0">
               <a href="#hero" className="text-[#e48600] hover:text-[#ffb13b] transition-colors">
                 GAMES
               </a>
@@ -136,19 +134,19 @@ export default function Home() {
             </div>
 
             {/* Amber Utility Chips */}
-            <div className="flex items-center gap-1.5">
-              <button className="bevel-button-amber px-2 py-1 text-[10px] font-bold tracking-wider uppercase cursor-pointer">
+            <div className="flex items-center gap-1 shrink-0">
+              <button className="bevel-button-amber px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase cursor-pointer">
                 CODE BANK
               </button>
-              <button className="bevel-button-amber px-2 py-1 text-[10px] font-bold tracking-wider uppercase cursor-pointer">
+              <button className="bevel-button-amber px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase cursor-pointer">
                 GAME FINDER
               </button>
             </div>
           </div>
 
           {/* Secondary Nav (Pale Sky Strip) */}
-          <div className="bg-[#9fbee7] border-t border-white px-3 py-1 flex flex-wrap items-center justify-between text-[11px] font-bold text-[#21242e] uppercase">
-            <div className="flex items-center gap-3">
+          <div className="bg-[#9fbee7] border-t border-white px-2 sm:px-3 py-1 flex items-center justify-between text-[10px] sm:text-[11px] font-bold text-[#21242e] uppercase overflow-x-auto whitespace-nowrap scrollbar-none">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <a href="#" className="hover:underline">Parents</a>
               <span className="text-[#3d4f97]">|</span>
               <a href="#" className="hover:underline">Customer Service</a>
@@ -159,7 +157,7 @@ export default function Home() {
               <span className="text-[#3d4f97]">|</span>
               <a href="#" className="hover:underline">Privacy</a>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-4">
               <a href="#" className="hover:underline text-[#e60012]">Store</a>
               <span className="text-[#3d4f97]">|</span>
               <a href="#" className="hover:underline">Contact</a>
@@ -167,11 +165,24 @@ export default function Home() {
           </div>
         </div>
 
+        {/* MOBILE EXTRA RAIL CHIPS (Shown only on small screens) */}
+        <div className="flex md:hidden items-center justify-between gap-1 overflow-x-auto bg-[#3d4f97] p-1 border border-[#21242e]">
+          <span className="text-white text-[10px] font-bold uppercase tracking-wider px-1 shrink-0">
+            TABS:
+          </span>
+          <div className="flex items-center gap-1 text-[10px] font-bold shrink-0">
+            <span className="bg-[#21242e] text-white px-2 py-0.5 rounded-xs border border-[#9fbee7]">TOP TEN</span>
+            <span className="bg-[#21242e] text-[#9fbee7] px-2 py-0.5 rounded-xs border border-[#9fbee7]">RENTALS</span>
+            <span className="bg-[#21242e] text-[#ecab37] px-2 py-0.5 rounded-xs border border-[#9fbee7]">CHOICE</span>
+            <span className="bg-[#21242e] text-[#9fbee7] px-2 py-0.5 rounded-xs border border-[#9fbee7]">ESRB</span>
+          </div>
+        </div>
+
         {/* 3. MAIN BODY SECTION WITH ROTATED LEFT RAIL */}
         <div className="flex gap-2">
           
-          {/* Left Rail (Rotated Carbon Tabs) */}
-          <div className="hidden md:flex flex-col gap-1 w-7 items-center pt-2">
+          {/* Left Rail (Rotated Carbon Tabs - Desktop Only) */}
+          <div className="hidden md:flex flex-col gap-1 w-7 items-center pt-2 shrink-0">
             <div className="carbon-halftone border border-[#3d4f97] text-white text-[10px] font-bold py-3 px-1 uppercase tracking-widest writing-vertical rotate-180 text-center rounded-xs shadow-xs cursor-pointer hover:bg-[#3d4f97]">
               TOP TEN
             </div>
@@ -187,40 +198,39 @@ export default function Home() {
           </div>
 
           {/* Main Content & Right Rail Split */}
-          <div className="flex-1 flex flex-col gap-2">
+          <div className="flex-1 flex flex-col gap-2 min-w-0">
             
             {/* HERO PANEL (Photographic Field with Box-Art Type) */}
-            <div id="hero" className="relative bevel-plate chamfer-card bg-[#206479] circuit-overlay p-6 text-white flex flex-col justify-between min-h-[190px] shadow-md overflow-hidden">
-              {/* Background Glow */}
+            <div id="hero" className="relative bevel-plate chamfer-card bg-[#206479] circuit-overlay p-4 sm:p-6 text-white flex flex-col justify-between min-h-[180px] sm:min-h-[200px] shadow-md overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-full bg-linear-to-l from-[#38BDF8]/20 to-transparent pointer-events-none" />
               
               {/* Top Tagline */}
-              <div className="flex items-center justify-between z-10">
-                <span className="bg-[#ecab37] text-[#21242e] font-black text-[10px] px-2 py-0.5 rounded-xs uppercase tracking-wider border border-[#21242e]">
+              <div className="flex items-center justify-between z-10 gap-2">
+                <span className="bg-[#ecab37] text-[#21242e] font-black text-[9px] sm:text-[10px] px-2 py-0.5 rounded-xs uppercase tracking-wider border border-[#21242e] shrink-0">
                   FEATURED HARDWARE &amp; PERSONA
                 </span>
-                <span className="text-xs font-bold tracking-wider text-[#9fbee7]">
+                <span className="text-[10px] sm:text-xs font-bold tracking-wider text-[#9fbee7] shrink-0">
                   MODEL NOH-2026
                 </span>
               </div>
 
               {/* Box-Art Hero Wordmark */}
-              <div className="my-3 z-10">
-                <h2 className="box-art-text text-3xl sm:text-4xl tracking-tight leading-none">
+              <div className="my-2 sm:my-3 z-10">
+                <h2 className="box-art-text text-2xl sm:text-3xl md:text-4xl tracking-tight leading-tight sm:leading-none break-words">
                   NOH GI HUN: NAVIGATOR &amp; DEV
                 </h2>
-                <p className="text-sm font-bold text-[#c0d5e6] mt-2 drop-shadow-sm max-w-lg">
+                <p className="text-xs sm:text-sm font-bold text-[#c0d5e6] mt-2 drop-shadow-sm max-w-lg leading-snug">
                   Gorgeous graphics, great sound, and safe maritime navigation! 
                   Sailing government vessels by day, building Next.js web applications by night.
                 </p>
               </div>
 
               {/* Bottom Action Strip */}
-              <div className="flex items-center justify-between z-10 pt-2 border-t border-white/20">
-                <span className="text-xs font-bold text-[#9fbee7]">
+              <div className="flex items-center justify-between z-10 pt-2 border-t border-white/20 gap-2">
+                <span className="text-[10px] sm:text-xs font-bold text-[#9fbee7] truncate">
                   PLAY IT ON: NEXT.JS 16 &amp; NINTENDO Y2K UI
                 </span>
-                <button className="bevel-button-orange rounded-full w-8 h-8 flex items-center justify-center font-black text-sm shadow-md cursor-pointer hover:scale-105 transition-transform">
+                <button className="bevel-button-orange rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center font-black text-xs sm:text-sm shadow-md cursor-pointer shrink-0 hover:scale-105 transition-transform">
                   ▶
                 </button>
               </div>
@@ -230,11 +240,10 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               
               {/* TWO-THIRDS CONTENT COLUMN */}
-              <div className="md:col-span-2 flex flex-col gap-2">
+              <div className="md:col-span-2 flex flex-col gap-2 min-w-0">
                 
                 {/* MODULE 1: OFFICIAL NEWS */}
                 <div id="news" className="bevel-plate bg-[#7a8aba] p-1.5 flex flex-col gap-1.5">
-                  {/* Section Label Bar */}
                   <div className="bg-[#3d4f97] text-white px-2 py-1 text-xs font-bold uppercase tracking-wider flex items-center justify-between border-b border-[#21242e]">
                     <span className="flex items-center gap-1">
                       <span className="text-[#ecab37]">≡</span> OFFICIAL NEWS &amp; LOGS
@@ -249,7 +258,7 @@ export default function Home() {
                         key={idx}
                         className="bevel-inset bg-[#dedede] p-2 flex items-center justify-between gap-2 hover:bg-white transition-colors cursor-pointer group"
                       >
-                        <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="flex items-center gap-2 overflow-hidden min-w-0">
                           <span className="bg-[#3d4f97] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-xs shrink-0">
                             {item.cat}
                           </span>
@@ -257,7 +266,7 @@ export default function Home() {
                             {item.title}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <span className="text-[10px] font-bold text-[#60619c]">
                             {item.date}
                           </span>
@@ -279,7 +288,7 @@ export default function Home() {
                     <span className="text-[10px] text-[#9fbee7]">4 STATIONS</span>
                   </div>
 
-                  {/* 2x2 Grid */}
+                  {/* 2x2 Grid (1col on mobile, 2col on sm+) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {featuredSites.map((site, idx) => (
                       <a
@@ -341,22 +350,22 @@ export default function Home() {
                         }`}
                       >
                         <div
-                          className={`w-3.5 h-3.5 rounded-full border border-[#21242e] flex items-center justify-center ${
+                          className={`w-3.5 h-3.5 rounded-full border border-[#21242e] flex items-center justify-center shrink-0 ${
                             selectedPoll === opt.id ? "bg-[#e60012]" : "bg-white"
                           }`}
                         >
                           {selectedPoll === opt.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
-                        <span>{opt.text}</span>
+                        <span className="leading-tight">{opt.text}</span>
                       </label>
                     ))}
                   </div>
 
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-[10px] font-bold text-[#3d4f97]">
+                  <div className="flex items-center justify-between pt-1 gap-2">
+                    <span className="text-[10px] font-bold text-[#3d4f97] truncate">
                       Total Votes: 1,997–2001
                     </span>
-                    <button className="bevel-button-orange px-3 py-1 font-bold text-xs uppercase cursor-pointer">
+                    <button className="bevel-button-orange px-3 py-1 font-bold text-xs uppercase cursor-pointer shrink-0">
                       SUBMIT VOTE
                     </button>
                   </div>
@@ -365,18 +374,18 @@ export default function Home() {
               </div>
 
               {/* ONE-THIRD RIGHT ACTION RAIL */}
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 min-w-0">
                 
                 {/* CARBON ACTION BUTTONS */}
-                <div className="flex flex-col gap-1">
+                <div className="grid grid-cols-2 md:grid-cols-1 gap-1">
                   {["LOGIN / REGISTER", "SUBSCRIBE NEWSLETTER", "HELP & SUPPORT", "SYSTEM SPEC"].map(
                     (btn, idx) => (
                       <button
                         key={idx}
-                        className="carbon-halftone border-2 border-[#21242e] text-white p-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-between hover:bg-[#3d4f97] hover:border-[#ecab37] transition-colors shadow-xs cursor-pointer"
+                        className="carbon-halftone border-2 border-[#21242e] text-white p-2.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider flex items-center justify-between hover:bg-[#3d4f97] hover:border-[#ecab37] transition-colors shadow-xs cursor-pointer truncate"
                       >
-                        <span>{btn}</span>
-                        <span className="text-[#ecab37]">▶</span>
+                        <span className="truncate">{btn}</span>
+                        <span className="text-[#ecab37] shrink-0 ml-1">▶</span>
                       </button>
                     )
                   )}
@@ -397,7 +406,7 @@ export default function Home() {
                   <span className="bg-[#e60012] text-white font-black text-[9px] px-2 py-0.5 rounded-xs uppercase tracking-widest">
                     SYSTEM PROMO
                   </span>
-                  <div className="w-16 h-16 bg-[#206479] border-2 border-[#21242e] rounded-xs flex items-center justify-center text-3xl text-white shadow-sm">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#206479] border-2 border-[#21242e] rounded-xs flex items-center justify-center text-2xl sm:text-3xl text-white shadow-sm">
                     🎮
                   </div>
                   <div className="text-xs font-extrabold text-[#21242e] uppercase leading-tight">
@@ -427,7 +436,7 @@ export default function Home() {
           </div>
 
           {/* ESRB Privacy Certified & Rating Badges */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Rating E Square */}
             <div className="w-7 h-7 bg-white border border-black flex items-center justify-center text-black font-black text-sm">
               E
