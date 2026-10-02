@@ -1,65 +1,130 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import type { LinkItem } from "@/types/link";
+
+/* ── Zod 스키마 정의 ───────────────────────────────────── */
+const linkFormSchema = z.object({
+  title: z
+    .string()
+    .min(1, { message: "제목을 입력해주세요." })
+    .min(2, { message: "제목은 최소 2자 이상 입력해주세요." })
+    .max(50, { message: "제목은 최대 50자까지 입력 가능합니다." }),
+  url: z
+    .string()
+    .min(1, { message: "주소를 입력해주세요." })
+    .refine(
+      (val) => {
+        const trimmed = val.trim();
+        if (!trimmed) return true; // 빈 값은 min(1)에서 처리
+        const isRelative = trimmed.startsWith("/");
+        const isMailto = trimmed.startsWith("mailto:");
+        const hasProtocol = /^https?:\/\//i.test(trimmed);
+        const isValidDomain = /^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+/i.test(trimmed);
+        return isRelative || isMailto || hasProtocol || isValidDomain;
+      },
+      { message: "올바른 주소 경로가 아닙니다. (예: https://example.com 또는 /p/github)" }
+    ),
+  subtitle: z.string().optional(),
+  description: z.string().optional(),
+  emoji: z.string(),
+  badge: z.string(),
+});
+
+type LinkFormValues = z.infer<typeof linkFormSchema>;
 
 interface AddLinkDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddLink: (newLink: LinkItem) => void;
+  onSaveLink: (link: LinkItem) => void;
+  editingLink?: LinkItem | null;
 }
 
 const PRESET_EMOJIS = ["🔗", "🐙", "📝", "✉️", "💼", "🎨", "🎬", "📄", "💬", "⚡", "🌐", "📱"];
 const PRESET_BADGES = ["코드", "기록", "문의", "경력", "포폴", "영상", "SNS", "기타"];
 
 /**
- * TDS AddLinkDialog — 링크 추가 모달 컴포넌트
- *
- * - 다이얼로그 모달 구조: TDS radius-2xl (20px), shadow-tds-3, overlay-scrim
- * - 로컬 상태 기반 입력 폼
+ * TDS Add/Edit Link Dialog — react-hook-form + zod 기반 실시간 검증 다이얼로그
  */
-export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps) {
-  const [title, setTitle] = useState("");
-  const [url, setUrl] = useState("");
-  const [subtitle, setSubtitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [emoji, setEmoji] = useState("🔗");
-  const [badge, setBadge] = useState("추가");
+export function AddLinkDialog({ isOpen, onClose, onSaveLink, editingLink }: AddLinkDialogProps) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    trigger,
+    formState: { errors },
+  } = useForm<LinkFormValues>({
+    resolver: zodResolver(linkFormSchema),
+    mode: "onChange", // ⚡ 버튼 누르기 전에도 타이핑 실시간 검증
+    defaultValues: {
+      title: "",
+      url: "",
+      subtitle: "",
+      description: "",
+      emoji: "🔗",
+      badge: "코드",
+    },
+  });
+
+  const selectedEmoji = watch("emoji");
+  const selectedBadge = watch("badge");
+
+  useEffect(() => {
+    if (editingLink) {
+      reset({
+        title: editingLink.title || "",
+        url: editingLink.url || "",
+        subtitle: editingLink.subtitle || "",
+        description: editingLink.description || "",
+        emoji: editingLink.emoji || "🔗",
+        badge: editingLink.badge || "기타",
+      });
+    } else {
+      reset({
+        title: "",
+        url: "",
+        subtitle: "",
+        description: "",
+        emoji: "🔗",
+        badge: "코드",
+      });
+    }
+  }, [editingLink, isOpen, reset]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !url.trim()) return;
-
-    // URL 프로토콜 보정 (http/https 또는 상대경로가 아닌 경우 https:// 붙이기)
-    let formattedUrl = url.trim();
-    if (!formattedUrl.startsWith("http://") && !formattedUrl.startsWith("https://") && !formattedUrl.startsWith("/") && !formattedUrl.startsWith("mailto:")) {
+  const onSubmit = (data: LinkFormValues) => {
+    let formattedUrl = data.url.trim();
+    if (
+      !formattedUrl.startsWith("http://") &&
+      !formattedUrl.startsWith("https://") &&
+      !formattedUrl.startsWith("/") &&
+      !formattedUrl.startsWith("mailto:")
+    ) {
       formattedUrl = `https://${formattedUrl}`;
     }
 
-    const newLink: LinkItem = {
-      id: `link_${Date.now()}`,
-      title: title.trim(),
-      subtitle: subtitle.trim() || (formattedUrl.startsWith("http") ? formattedUrl.replace(/^https?:\/\//, "") : formattedUrl),
-      description: description.trim(),
+    const savedLink: LinkItem = {
+      id: editingLink ? editingLink.id : `link_${Date.now()}`,
+      title: data.title.trim(),
+      subtitle: data.subtitle?.trim() || (formattedUrl.startsWith("http") ? formattedUrl.replace(/^https?:\/\//, "") : formattedUrl),
+      description: data.description?.trim() || "",
       url: formattedUrl,
-      emoji: emoji || "🔗",
-      badge: badge.trim() || "기타",
-      badgeBg: "bg-tds-bg-brand-weak text-tds-text-brand",
+      emoji: data.emoji || "🔗",
+      badge: data.badge?.trim() || "기타",
+      badgeBg: editingLink?.badgeBg || "bg-tds-bg-brand-weak text-tds-text-brand",
     };
 
-    onAddLink(newLink);
-
-    // Reset form
-    setTitle("");
-    setUrl("");
-    setSubtitle("");
-    setDescription("");
-    setEmoji("🔗");
-    setBadge("추가");
+    onSaveLink(savedLink);
     onClose();
   };
+
+  const isEditMode = Boolean(editingLink);
 
   return (
     <div
@@ -68,7 +133,7 @@ export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps
       onClick={(e) => e.target === e.currentTarget && onClose()}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="add-link-title"
+      aria-labelledby="link-dialog-title"
     >
       {/* TDS dialog: radius-2xl (20px), shadow-tds-3, 24px inner padding */}
       <div className="w-full max-w-md bg-white rounded-tds-2xl shadow-tds-3 p-4 sm:p-6 max-h-[90vh] overflow-y-auto min-w-0">
@@ -76,11 +141,11 @@ export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps
         {/* 모달 헤더 */}
         <div className="flex items-center justify-between mb-4 sm:mb-5 min-w-0">
           <h2
-            id="add-link-title"
+            id="link-dialog-title"
             className="text-base sm:text-lg font-semibold leading-[1.45] tracking-[-0.010em]
                        text-tds-text-primary truncate"
           >
-            ➕ 새 링크 추가
+            {isEditMode ? "✏️ 링크 수정" : "➕ 새 링크 추가"}
           </h2>
           <button
             type="button"
@@ -97,7 +162,7 @@ export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps
         </div>
 
         {/* 입력 폼 */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 sm:gap-4 min-w-0">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-3.5 sm:gap-4 min-w-0">
 
           {/* 제목 */}
           <div className="flex flex-col gap-1.5 min-w-0">
@@ -106,19 +171,30 @@ export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps
             </label>
             <input
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              {...register("title", {
+                onChange: () => {
+                  const urlVal = watch("url");
+                  if (!urlVal || !urlVal.trim()) {
+                    trigger("url");
+                  }
+                },
+              })}
               placeholder="예: GitHub 저장소, 내 블로그"
-              required
-              className="h-11 sm:h-12 w-full rounded-tds-m border border-tds-border-default
-                         bg-tds-fill-secondary px-3.5 sm:px-4
+              className={`h-11 sm:h-12 w-full rounded-tds-m border px-3.5 sm:px-4
                          text-[14px] sm:text-[15px] leading-[1.50] tracking-[-0.005em] text-tds-text-primary
                          placeholder:text-tds-text-disabled
                          focus:outline-none focus:bg-white
-                         focus:border-tds-border-focused focus:ring-2
-                         focus:ring-tds-border-focused/20
-                         transition-all duration-[200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] min-w-0"
+                         transition-all duration-[200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] min-w-0
+                         ${errors.title
+                           ? "border-tds-red-500 bg-red-50/30 focus:ring-2 focus:ring-tds-red-500/20"
+                           : "border-tds-border-default bg-tds-fill-secondary focus:border-tds-border-focused focus:ring-2 focus:ring-tds-border-focused/20"
+                         }`}
             />
+            {errors.title && (
+              <p className="text-[12px] font-medium text-tds-text-danger mt-0.5 leading-[1.3]">
+                {errors.title.message}
+              </p>
+            )}
           </div>
 
           {/* URL */}
@@ -128,19 +204,30 @@ export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps
             </label>
             <input
               type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              {...register("url", {
+                onChange: () => {
+                  const titleVal = watch("title");
+                  if (!titleVal || !titleVal.trim()) {
+                    trigger("title");
+                  }
+                },
+              })}
               placeholder="예: https://github.com/username 또는 /p/github"
-              required
-              className="h-11 sm:h-12 w-full rounded-tds-m border border-tds-border-default
-                         bg-tds-fill-secondary px-3.5 sm:px-4
+              className={`h-11 sm:h-12 w-full rounded-tds-m border px-3.5 sm:px-4
                          text-[14px] sm:text-[15px] leading-[1.50] tracking-[-0.005em] text-tds-text-primary
                          placeholder:text-tds-text-disabled
                          focus:outline-none focus:bg-white
-                         focus:border-tds-border-focused focus:ring-2
-                         focus:ring-tds-border-focused/20
-                         transition-all duration-[200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] min-w-0"
+                         transition-all duration-[200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] min-w-0
+                         ${errors.url
+                           ? "border-tds-red-500 bg-red-50/30 focus:ring-2 focus:ring-tds-red-500/20"
+                           : "border-tds-border-default bg-tds-fill-secondary focus:border-tds-border-focused focus:ring-2 focus:ring-tds-border-focused/20"
+                         }`}
             />
+            {errors.url && (
+              <p className="text-[12px] font-medium text-tds-text-danger mt-0.5 leading-[1.3]">
+                {errors.url.message}
+              </p>
+            )}
           </div>
 
           {/* 이모지 선택 */}
@@ -151,8 +238,7 @@ export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps
             <div className="flex items-center gap-2 min-w-0">
               <input
                 type="text"
-                value={emoji}
-                onChange={(e) => setEmoji(e.target.value)}
+                {...register("emoji")}
                 maxLength={4}
                 className="h-11 sm:h-12 w-16 text-center rounded-tds-m border border-tds-border-default
                            bg-tds-fill-secondary text-xl
@@ -164,10 +250,10 @@ export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps
                   <button
                     key={item}
                     type="button"
-                    onClick={() => setEmoji(item)}
+                    onClick={() => setValue("emoji", item, { shouldValidate: true })}
                     className={`w-9 h-9 rounded-tds-m flex items-center justify-center text-lg shrink-0
                                 transition-all duration-[120ms] cursor-pointer
-                                ${emoji === item ? "bg-tds-bg-brand-weak border border-tds-border-focused scale-105" : "bg-tds-fill-secondary hover:bg-tds-grey-200"}`}
+                                ${selectedEmoji === item ? "bg-tds-bg-brand-weak border border-tds-border-focused scale-105" : "bg-tds-fill-secondary hover:bg-tds-grey-200"}`}
                   >
                     {item}
                   </button>
@@ -183,8 +269,7 @@ export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps
             </label>
             <input
               type="text"
-              value={subtitle}
-              onChange={(e) => setSubtitle(e.target.value)}
+              {...register("subtitle")}
               placeholder="예: @username, blog.mylink.dev"
               className="h-11 sm:h-12 w-full rounded-tds-m border border-tds-border-default
                          bg-tds-fill-secondary px-3.5 sm:px-4
@@ -207,9 +292,9 @@ export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps
                 <button
                   key={b}
                   type="button"
-                  onClick={() => setBadge(b)}
+                  onClick={() => setValue("badge", b, { shouldValidate: true })}
                   className={`px-2.5 py-1 rounded-tds-full text-[12px] font-semibold transition-all cursor-pointer
-                              ${badge === b ? "bg-tds-fill-brand text-white" : "bg-tds-fill-secondary text-tds-text-secondary hover:bg-tds-grey-200"}`}
+                              ${selectedBadge === b ? "bg-tds-fill-brand text-white" : "bg-tds-fill-secondary text-tds-text-secondary hover:bg-tds-grey-200"}`}
                 >
                   {b}
                 </button>
@@ -217,8 +302,7 @@ export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps
             </div>
             <input
               type="text"
-              value={badge}
-              onChange={(e) => setBadge(e.target.value)}
+              {...register("badge")}
               placeholder="직접 입력 (예: 개발, 소셜)"
               className="h-10 w-full rounded-tds-m border border-tds-border-default
                          bg-tds-fill-secondary px-3.5 sm:px-4
@@ -236,8 +320,7 @@ export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps
             </label>
             <input
               type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              {...register("description")}
               placeholder="예: 프로젝트 소스 코드 및 오픈소스 활동 모음"
               className="h-11 sm:h-12 w-full rounded-tds-m border border-tds-border-default
                          bg-tds-fill-secondary px-3.5 sm:px-4
@@ -271,7 +354,7 @@ export function AddLinkDialog({ isOpen, onClose, onAddLink }: AddLinkDialogProps
                          transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
                          active:scale-[0.98] cursor-pointer shrink-0"
             >
-              링크 추가
+              {isEditMode ? "저장 💾" : "링크 추가"}
             </button>
           </div>
 

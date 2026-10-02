@@ -33,8 +33,9 @@ export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
 
   // 모달 상태
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
 
   // 프로필 편집 폼 상태
   const [editName, setEditName] = useState("");
@@ -64,11 +65,11 @@ export default function Home() {
     }
   }, []);
 
-  const handleOpenEdit = () => {
+  const handleOpenEditProfile = () => {
     setEditName(profile.name);
     setEditBadge(profile.badge);
     setEditBio(profile.bio);
-    setIsEditOpen(true);
+    setIsEditProfileOpen(true);
   };
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -80,7 +81,7 @@ export default function Home() {
     } catch (e) {
       console.error("LocalStorage save error:", e);
     }
-    setIsEditOpen(false);
+    setIsEditProfileOpen(false);
   };
 
   const handleResetProfile = () => {
@@ -89,13 +90,35 @@ export default function Home() {
       setLinks(DEFAULT_LINKS);
       localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(DEFAULT_PROFILE));
       localStorage.setItem(LOCAL_STORAGE_LINKS_KEY, JSON.stringify(DEFAULT_LINKS));
-      setIsEditOpen(false);
+      setIsEditProfileOpen(false);
     }
   };
 
-  // 링크 추가 핸들러
-  const handleAddLink = (newLink: LinkItem) => {
-    const updatedLinks = [newLink, ...links];
+  // 링크 추가 모달 열기
+  const handleOpenAddLink = () => {
+    setEditingLink(null);
+    setIsLinkDialogOpen(true);
+  };
+
+  // 링크 수정 모달 열기
+  const handleOpenEditLink = (link: LinkItem) => {
+    setEditingLink(link);
+    setIsLinkDialogOpen(true);
+  };
+
+  // 링크 저장 핸들러 (추가 및 수정 공통)
+  const handleSaveLink = (savedLink: LinkItem) => {
+    let updatedLinks: LinkItem[];
+    const exists = links.some((item) => item.id === savedLink.id);
+
+    if (exists) {
+      // 수정
+      updatedLinks = links.map((item) => (item.id === savedLink.id ? savedLink : item));
+    } else {
+      // 추가
+      updatedLinks = [savedLink, ...links];
+    }
+
     setLinks(updatedLinks);
     try {
       localStorage.setItem(LOCAL_STORAGE_LINKS_KEY, JSON.stringify(updatedLinks));
@@ -132,9 +155,9 @@ export default function Home() {
           <span className="font-semibold truncate">💾 LocalStorage 시연 중</span>
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-auto">
-          {/* TDS Primary Button — M size: h-8 radius-m(12px) label-s(13px/600) */}
+          {/* 단 하나의 ➕ 링크 추가 버튼 유지 */}
           <button
-            onClick={() => setIsAddLinkOpen(true)}
+            onClick={handleOpenAddLink}
             className="h-8 px-3 rounded-tds-m bg-tds-fill-brand hover:bg-tds-blue-600
                        active:scale-[0.98] text-white text-[13px] font-semibold
                        transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
@@ -143,7 +166,7 @@ export default function Home() {
             ➕ 링크 추가
           </button>
           <button
-            onClick={handleOpenEdit}
+            onClick={handleOpenEditProfile}
             className="h-8 px-3 rounded-tds-m bg-tds-grey-800 hover:bg-tds-grey-700
                        active:scale-[0.98] text-white text-[13px] font-semibold
                        transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
@@ -191,31 +214,25 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* 링크 섹션 헤더 */}
-        <div className="flex items-center justify-between gap-2 px-1 mt-2 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            {/* label-m: 15px/600 */}
-            <span className="text-[14px] sm:text-[15px] font-semibold leading-[1.25] tracking-[-0.005em]
-                             text-tds-text-primary">
-              🔗 링크 바로가기
-            </span>
-            {/* body-3: 13px / text-disabled */}
-            <span className="text-[12px] sm:text-[13px] leading-[1.50] text-tds-text-disabled shrink-0">
-              (총 {links.length}개)
-            </span>
-          </div>
-
-          <button
-            onClick={() => setIsAddLinkOpen(true)}
-            className="text-[13px] font-semibold text-tds-text-brand hover:underline
-                       transition-all cursor-pointer shrink-0"
-          >
-            + 새 링크 추가
-          </button>
+        {/* 링크 섹션 헤더 (중단부 중복 추가 버튼 제거) */}
+        <div className="flex flex-wrap items-center justify-between gap-1 px-1 mt-2 min-w-0">
+          {/* label-m: 15px/600 */}
+          <span className="text-[14px] sm:text-[15px] font-semibold leading-[1.25] tracking-[-0.005em]
+                           text-tds-text-primary">
+            🔗 링크 바로가기
+          </span>
+          {/* body-3: 13px / text-disabled */}
+          <span className="text-[12px] sm:text-[13px] leading-[1.50] text-tds-text-disabled">
+            총 {links.length}개 · 클릭 시 이동 →
+          </span>
         </div>
 
-        {/* 링크 목록 — LinkList */}
-        <LinkList links={links} onDelete={handleDeleteLink} />
+        {/* 링크 목록 — LinkList (각 카드별 수정/삭제 기능 지원) */}
+        <LinkList
+          links={links}
+          onEdit={handleOpenEditLink}
+          onDelete={handleDeleteLink}
+        />
 
         {/* 푸터 — body-3: 13px / text-disabled */}
         <footer className="text-center text-[12px] sm:text-[13px] leading-[1.50] text-tds-text-disabled py-4 break-words">
@@ -224,21 +241,22 @@ export default function Home() {
 
       </div>
 
-      {/* ── 새 링크 추가 다이얼로그 모달 ── */}
+      {/* ── 링크 추가/수정 다이얼로그 모달 ── */}
       <AddLinkDialog
-        isOpen={isAddLinkOpen}
-        onClose={() => setIsAddLinkOpen(false)}
-        onAddLink={handleAddLink}
+        isOpen={isLinkDialogOpen}
+        onClose={() => setIsLinkDialogOpen(false)}
+        onSaveLink={handleSaveLink}
+        editingLink={editingLink}
       />
 
       {/* ── 프로필 편집 모달 ──
           shadcn/ui Card + TDS radius-tds-2xl (20px) + shadow-tds-3
       ─── */}
-      {isEditOpen && (
+      {isEditProfileOpen && (
         <div
           className="fixed inset-0 bg-tds-overlay-scrim backdrop-blur-sm z-50
                      flex items-center justify-center p-3 sm:p-4 min-w-0"
-          onClick={(e) => e.target === e.currentTarget && setIsEditOpen(false)}
+          onClick={(e) => e.target === e.currentTarget && setIsEditProfileOpen(false)}
         >
           {/* TDS dialog: radius-2xl (20px), shadow-tds-3, 24px inner padding */}
           <div className="w-full max-w-md bg-white rounded-tds-2xl shadow-tds-3 p-4 sm:p-6 max-h-[90vh] overflow-y-auto min-w-0">
@@ -251,7 +269,7 @@ export default function Home() {
                 ⚡ 프로필 편집
               </h2>
               <button
-                onClick={() => setIsEditOpen(false)}
+                onClick={() => setIsEditProfileOpen(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-tds-s
                            text-tds-text-disabled hover:text-tds-text-primary
                            hover:bg-tds-fill-secondary
@@ -341,7 +359,7 @@ export default function Home() {
                 <div className="flex gap-2 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setIsEditOpen(false)}
+                    onClick={() => setIsEditProfileOpen(false)}
                     className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-tds-m bg-tds-fill-secondary
                                hover:bg-tds-grey-200 text-tds-text-primary
                                text-[13px] sm:text-[15px] font-semibold leading-[1.25] tracking-[-0.005em]

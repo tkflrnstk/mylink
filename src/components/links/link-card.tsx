@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ArrowRight, Trash2 } from "lucide-react";
+import { ExternalLink, ArrowRight, Trash2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LinkItem } from "@/types/link";
 
@@ -8,6 +8,8 @@ interface LinkCardProps {
   link: LinkItem;
   /** 카드 전체에 추가할 Tailwind 클래스 */
   className?: string;
+  /** 링크 수정 핸들러 */
+  onEdit?: (link: LinkItem) => void;
   /** 링크 삭제 핸들러 */
   onDelete?: (id: string) => void;
 }
@@ -24,7 +26,7 @@ interface LinkCardProps {
  * - 전환: dur-base(200ms) / ease-tds
  * - 외부 링크: ExternalLink 아이콘 + _blank
  */
-export function LinkCard({ link, className, onDelete }: LinkCardProps) {
+export function LinkCard({ link, className, onEdit, onDelete }: LinkCardProps) {
   const isExternal = link.url.startsWith("http");
 
   return (
@@ -50,7 +52,7 @@ export function LinkCard({ link, className, onDelete }: LinkCardProps) {
           "active:scale-[0.98]"
         )}
       >
-        <CardContent className="flex items-center gap-2.5 sm:gap-4 p-3.5 sm:p-4 min-w-0 overflow-hidden">
+        <CardContent className="flex items-center gap-2 sm:gap-3 p-3.5 sm:p-4 min-w-0 overflow-hidden">
           {/* 이모지 아이콘 — radius-m (12px), fill-secondary → bg-brand-weak (hover) */}
           <div
             className={cn(
@@ -92,34 +94,54 @@ export function LinkCard({ link, className, onDelete }: LinkCardProps) {
             </p>
           </div>
 
-          {/* 삭제 버튼 (지정된 경우만) */}
-          {onDelete && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onDelete(link.id);
-              }}
-              aria-label={`${link.title} 삭제`}
-              title="링크 삭제"
-              className="p-1.5 rounded-tds-s text-tds-text-disabled hover:text-tds-text-danger
-                         hover:bg-tds-fill-secondary transition-colors duration-[120ms]
-                         cursor-pointer shrink-0"
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
-
-          {/* 방향 아이콘 */}
-          <div
-            className={cn(
-              "flex-shrink-0 text-tds-text-disabled text-xs sm:text-base",
-              "group-hover:text-tds-text-brand",
-              "transition-colors duration-[200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]"
+          {/* 편집 & 삭제 버튼 영역 */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit(link);
+                }}
+                aria-label={`${link.title} 수정`}
+                title="링크 수정"
+                className="p-1.5 rounded-tds-s text-tds-text-disabled hover:text-tds-text-brand
+                           hover:bg-tds-fill-secondary transition-colors duration-[120ms]
+                           cursor-pointer shrink-0"
+              >
+                <Pencil size={15} />
+              </button>
             )}
-          >
-            {isExternal ? <ExternalLink size={16} /> : <ArrowRight size={16} />}
+
+            {onDelete && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete(link.id);
+                }}
+                aria-label={`${link.title} 삭제`}
+                title="링크 삭제"
+                className="p-1.5 rounded-tds-s text-tds-text-disabled hover:text-tds-text-danger
+                           hover:bg-tds-fill-secondary transition-colors duration-[120ms]
+                           cursor-pointer shrink-0"
+              >
+                <Trash2 size={15} />
+              </button>
+            )}
+
+            {/* 방향 아이콘 */}
+            <div
+              className={cn(
+                "flex-shrink-0 text-tds-text-disabled text-xs sm:text-base ml-1",
+                "group-hover:text-tds-text-brand",
+                "transition-colors duration-[200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]"
+              )}
+            >
+              {isExternal ? <ExternalLink size={16} /> : <ArrowRight size={16} />}
+            </div>
           </div>
         </CardContent>
       </Card>

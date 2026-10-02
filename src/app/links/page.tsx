@@ -12,7 +12,8 @@ const LOCAL_STORAGE_LINKS_KEY = "mylink_demo_links_v1";
 export default function LinksPage() {
   const [links, setLinks] = useState<LinkItem[]>(DEFAULT_LINKS);
   const [isMounted, setIsMounted] = useState(false);
-  const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -28,8 +29,26 @@ export default function LinksPage() {
     }
   }, []);
 
-  const handleAddLink = (newLink: LinkItem) => {
-    const updatedLinks = [newLink, ...links];
+  const handleOpenAddLink = () => {
+    setEditingLink(null);
+    setIsLinkDialogOpen(true);
+  };
+
+  const handleOpenEditLink = (link: LinkItem) => {
+    setEditingLink(link);
+    setIsLinkDialogOpen(true);
+  };
+
+  const handleSaveLink = (savedLink: LinkItem) => {
+    let updatedLinks: LinkItem[];
+    const exists = links.some((item) => item.id === savedLink.id);
+
+    if (exists) {
+      updatedLinks = links.map((item) => (item.id === savedLink.id ? savedLink : item));
+    } else {
+      updatedLinks = [savedLink, ...links];
+    }
+
     setLinks(updatedLinks);
     try {
       localStorage.setItem(LOCAL_STORAGE_LINKS_KEY, JSON.stringify(updatedLinks));
@@ -72,11 +91,11 @@ export default function LinksPage() {
                 {links.length}개
               </span>
               <button
-                onClick={() => setIsAddLinkOpen(true)}
+                onClick={handleOpenAddLink}
                 className="h-[30px] sm:h-[34px] px-3 rounded-tds-m bg-tds-fill-brand hover:bg-tds-blue-600
                            text-white text-[13px] sm:text-[14px] font-semibold transition-all cursor-pointer shrink-0"
               >
-                + 새 링크 추가
+                + 링크 추가
               </button>
             </div>
           </div>
@@ -89,7 +108,11 @@ export default function LinksPage() {
         </header>
 
         {/* 링크 목록 */}
-        <LinkList links={links} onDelete={handleDeleteLink} />
+        <LinkList
+          links={links}
+          onEdit={handleOpenEditLink}
+          onDelete={handleDeleteLink}
+        />
 
         {/* 푸터 — body-3 / text-disabled */}
         <footer className="text-center text-[12px] sm:text-[13px] leading-[1.50] text-tds-text-disabled pt-2 break-words">
@@ -98,11 +121,12 @@ export default function LinksPage() {
 
       </div>
 
-      {/* 새 링크 추가 다이얼로그 */}
+      {/* 새 링크 추가 / 수정 다이얼로그 */}
       <AddLinkDialog
-        isOpen={isAddLinkOpen}
-        onClose={() => setIsAddLinkOpen(false)}
-        onAddLink={handleAddLink}
+        isOpen={isLinkDialogOpen}
+        onClose={() => setIsLinkDialogOpen(false)}
+        onSaveLink={handleSaveLink}
+        editingLink={editingLink}
       />
     </main>
   );

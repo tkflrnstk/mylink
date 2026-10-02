@@ -8,6 +8,8 @@ interface LinkListProps {
   className?: string;
   /** 개별 카드에 추가할 Tailwind 클래스 */
   cardClassName?: string;
+  /** 링크 수정 핸들러 */
+  onEdit?: (link: LinkItem) => void;
   /** 링크 삭제 핸들러 */
   onDelete?: (id: string) => void;
 }
@@ -18,7 +20,7 @@ interface LinkListProps {
  * - 시맨틱 `<ul>/<li>` 마크업을 사용합니다.
  * - links 배열이 비어 있으면 빈 상태 메시지를 표시합니다.
  */
-export function LinkList({ links, className, cardClassName, onDelete }: LinkListProps) {
+export function LinkList({ links, className, cardClassName, onEdit, onDelete }: LinkListProps) {
   if (links.length === 0) {
     return (
       <div className="text-center py-10 px-4 bg-white rounded-tds-xl border border-tds-border-default">
@@ -36,7 +38,7 @@ export function LinkList({ links, className, cardClassName, onDelete }: LinkList
     <ul role="list" className={cn("flex flex-col gap-3", className)}>
       {links.map((link) => (
         <li key={link.id}>
-          <LinkCard link={link} className={cardClassName} onDelete={onDelete} />
+          <LinkCard link={link} className={cardClassName} onEdit={onEdit} onDelete={onDelete} />
         </li>
       ))}
     </ul>
