@@ -1,6 +1,13 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+/**
+ * TDS Card — design.md §8.1 기준
+ * - 배경: white
+ * - 테두리: 1px border-default (grey-200 / tds-border-default)
+ * - 반경: radius-xl (16px)
+ * - 그림자: shadow-tds-1
+ */
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -8,7 +15,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-2xl border border-[#E5E8EB] bg-white text-[#191F28] shadow-[0_2px_10px_rgba(0,0,0,0.04)]",
+      "rounded-tds-xl border border-tds-border-default bg-white text-tds-text-primary shadow-tds-1",
       className
     )}
     {...props}
@@ -35,7 +42,8 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-xl font-bold leading-tight tracking-tight text-[#191F28]",
+      /* title-1: 18px SemiBold */
+      "text-lg font-semibold leading-[1.45] tracking-[-0.010em] text-tds-text-primary",
       className
     )}
     {...props}
@@ -49,7 +57,11 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-[#6B7684] leading-relaxed", className)}
+    className={cn(
+      /* body-2: 15px Regular */
+      "text-[15px] leading-[1.50] tracking-[-0.005em] text-tds-text-secondary",
+      className
+    )}
     {...props}
   />
 ));

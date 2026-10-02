@@ -1,0 +1,62 @@
+[
+  {
+    "id": "1",
+    "title": "GitHub 코드 저장소",
+    "subtitle": "@tkflrnstk",
+    "description": "개발 프로젝트와 오픈소스 코드 모음",
+    "url": "/p/github",
+    "emoji": "🐙",
+    "badge": "코드",
+    "badgeBg": "bg-[#e60012] text-white"
+  },
+  {
+    "id": "2",
+    "title": "기술 & 항해 블로그",
+    "subtitle": "blog.nolink.dev",
+    "description": "공부 기록과 바이브 코딩, 항해 이야기",
+    "url": "/p/blog",
+    "emoji": "📝",
+    "badge": "기록",
+    "badgeBg": "bg-[#3d4f97] text-white"
+  },
+  {
+    "id": "3",
+    "title": "이메일 연락하기",
+    "subtitle": "contact@example.com",
+    "description": "프로젝트 제안 및 방명록 문의",
+    "url": "/p/contact",
+    "emoji": "✉️",
+    "badge": "문의",
+    "badgeBg": "bg-[#206479] text-white"
+  },
+  {
+    "id": "4",
+    "title": "LinkedIn 프로필",
+    "subtitle": "linkedin.com/in/tkflrnstk",
+    "description": "경력 사항 및 네트워킹",
+    "url": "/p/linkedin",
+    "emoji": "💼",
+    "badge": "경력",
+    "badgeBg": "bg-[#0077b5] text-white"
+  },
+  {
+    "id": "5",
+    "title": "포트폴리오 사이트",
+    "subtitle": "portfolio.nolink.dev",
+    "description": "작업물 쇼케이스 및 프로젝트 소개",
+    "url": "/p/portfolio",
+    "emoji": "🎨",
+    "badge": "포폴",
+    "badgeBg": "bg-[#7c3aed] text-white"
+  },
+  {
+    "id": "6",
+    "title": "YouTube 채널",
+    "subtitle": "@NoKihun_Dev",
+    "description": "개발 브이로그 & 항해 영상",
+    "url": "/p/youtube",
+    "emoji": "🎬",
+    "badge": "영상",
+    "badgeBg": "bg-[#ff0000] text-white"
+  }
+]

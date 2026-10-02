@@ -86,18 +86,51 @@
 
 ## 4. 디자인 시스템 명세 (Design System: shadcn/ui + Toss Design System)
 
+> **세부 명세**: [`docs/design.md`](file:///c:/Users/pj/pjwk1/docs/design.md) 문서를 단일 소스로 사용 (v2.0, TDS Mobile 기반)
+
 ### 4.1 shadcn/ui + TDS 융합 원칙
 * **컴포넌트 기반 아키텍처**: 모든 핵심 UI 요소(버튼, 다이얼로그 모달, 카드, 뱃지, 입력 인풋 등)는 `shadcn/ui` 컴포넌트(`src/components/ui/*`)를 기반으로 확장·커스터마이징합니다.
-* **토스 디자인 시스템(TDS) 스타일 토큰**:
-  - **Color**: 시그니처 토스 블루(`--color-toss-blue: #3182F6`), 소프트 라이트 배경(`--color-toss-grey-50: #F9FAFB`, `grey-100: #F2F4F6`), 선명한 먹색 텍스트(`grey-900: #191F28`).
-  - **Radius**: 부드럽고 넉넉한 모서리 곡률(`rounded-2xl` / `16px`, `rounded-3xl` / `24px`).
-  - **Shadow**: 인위적인 드롭섀도우 대신 극도로 부드러운 소프트 카드 섀도우(`shadow-[0_2px_10px_rgba(0,0,0,0.04)]`).
-  - **Interaction**: 카드 및 버튼 클릭 시 미세한 스케일 다운 피드백(`active:scale-[0.98]`).
+* **TDS 컬러 시스템** (OKLCH `@toss/tds-colors` v0.1.0 발행값 기준):
+  - **Toss Blue**: `--color-tds-blue-500: oklch(0.620 0.191 258)` (`#3182F6`) — 화면당 단 하나의 CTA
+  - **Brand Weak**: `--color-tds-blue-50: oklch(0.959 0.020 250)` (`#E8F3FF`) — 칩/뱃지/아이콘 배경
+  - **Greyscale**: `grey-900` ~ `grey-50` 10단계 cool-blue 중성색 (OKLCH 균질화)
+  - **Semantic alias**: `fill-brand`, `text-primary`, `border-default` 등 semantic 토큰으로만 호출, base 팔레트 직접 참조 금지
 * **Tailwind CSS v4 (CSS-First)**:
-  - 별도의 `tailwind.config.js` 없이 `src/app/globals.css`의 `@theme` 및 CSS 변수 체계를 통해 디자인 토큰을 중앙 집중 관리합니다.
-  - 클래스 병합 유틸리티로 `src/lib/utils.ts`의 표준 `cn` (`clsx` + `tailwind-merge`)을 필수로 사용합니다.
-* **아이콘 시스템**: `lucide-react`를 표준 아이콘 세트로 채택합니다.
-* **상세 명세 문서**: 구체적인 색상 코드 및 타이포그래피 계층은 [`docs/design.md`](file:///c:/Users/pj/pjwk1/docs/design.md) 문서를 준수합니다.
+  - `src/app/globals.css`의 `@theme` 블록에 TDS 토큰을 Tailwind 유틸리티로 등록 (`rounded-tds-xl`, `shadow-tds-1`, `text-tds-text-primary` 등)
+  - 별도의 `tailwind.config.js` 없이 CSS 변수 체계로 중앙 집중 관리
+  - **⚠️ CSS Modules(`.module.css`) 사용 금지**: 모든 스타일링은 Tailwind CSS 유틸리티 클래스로 통일합니다. 컴포넌트별 스코프 스타일이 필요한 경우에도 `*.module.css` 파일을 생성하지 않으며, Tailwind의 임의값(`[...]`) 문법 또는 `globals.css` 내 `@layer` 블록을 활용합니다.
+* **TDS 타이포그래피 계층** (Pretendard Variable 서체):
+  - `h2` (24px/700/1.30/-0.020em): 프로필 이름, 페이지 제목
+  - `title-1` (18px/600/1.45/-0.010em): 섹션 제목, 모달 헤더
+  - `body-2` (15px/400/1.50/-0.005em): 본문 소개글
+  - `label-m` (15px/600/1.25/-0.005em): 링크 카드 제목, 버튼(M)
+  - `body-3` (13px/400/1.50): 서브텍스트, 캡션, 설명
+  - `label-s` (13px/600/1.25): 뱃지, 소형 버튼
+* **TDS Radius 토큰**:
+  - `radius-m (12px)`: 텍스트 필드, 이모지 아이콘 영역
+  - `radius-xl (16px)`: **카드** (shadcn/ui Card 기본값)
+  - `radius-2xl (20px)`: 모달, 다이얼로그
+  - `radius-full (999px)`: **칩(Chip), 프로필 뱃지**
+  - ⚠️ iOS squircle/blob 금지 — 위 9단 ladder만 허용
+* **TDS Elevation 토큰**:
+  - `shadow-tds-1`: 기본 카드 (`0 1px 2px navy-900/0.04`)
+  - `shadow-tds-2`: 호버 카드 (`0 4px 12px navy-900/0.06`)
+  - `shadow-tds-3`: 다이얼로그 (`0 12px 32px navy-900/0.10`)
+* **TDS Motion 토큰**:
+  - `ease-tds`: `cubic-bezier(0.22, 0.61, 0.36, 1)` — 기본 ease-out-expo
+  - `dur-fast (120ms)`: 버튼 press / `dur-base (200ms)`: hover, toggle / `dur-slow (320ms)`: sheet
+  - 바운스 오버슈트 없음, 320ms 초과 fade 없음, skeleton shimmer 없음
+* **서체**: Pretendard Variable (CDN) — Toss Product Sans의 공식 권장 대체 서체
+* **아이콘 시스템**: `lucide-react` (TDS Icon의 Lucide 대체, 24px 그리드 / 1.5px stroke)
+
+### 4.2 TDS Do / Don't (핵심)
+| DO ✅ | DON'T ❌ |
+| :--- | :--- |
+| 화면당 단일 강조색 (`fill-brand` 하나만 CTA) | 그라디언트를 카드/배경에 사용 (3가지 예외만 허용) |
+| Product 카피: 해요체(`-요`) + 위임형 | iOS squircle/blob 라운드 사용 |
+| 버튼 라벨: 일어날 일을 직접 표현 (`저장`, `다음`) | 2px 장식 보더 / 컬러 left-rail accent 카드 |
+| pressed: `overlay-press(26%)` / disabled: `opacity-30` | skeleton shimmer (3-dot loader 사용) |
+| 아이콘: `currentColor` 상속 | CSS Modules (`.module.css`) |
 
 ---
 
@@ -111,6 +144,26 @@
 | **DEMO-03** | 테마 스위처 | 🎮 `닌텐도 레트로 메탈` / 🌊 `오션 블루 글라스` / ⚡ `네오브루탈리즘 팝` 테마 실시간 전환 | ✅ 완료 |
 | **DEMO-04** | 데이터 초기화 | 시연 복구를 위해 로컬 데이터를 기본 프로필(노기훈, 정부 항해사)로 리셋하는 기능 | ✅ 완료 |
 | **DS-01** | shadcn/ui 환경 구축 | Tailwind CSS v4 + components.json + utils.ts 초기화 완료 | ✅ 완료 |
+
+### F-2. 링크 목록 페이지 (`/links`) — TDS 적용
+| 기능 ID | 기능 명 | 상세 설명 | 구현 상태 |
+| :--- | :--- | :--- | :--- |
+| **LINK-01** | 링크 목록 페이지 | `/links` 라우트. `src/data/links.json` 더미 데이터를 Server Component에서 직접 import하여 렌더링 | ✅ 완료 |
+| **LINK-02** | TDS 타이포그래피 적용 | design.md §3 기준 — 링크 제목 `15px SemiBold`, 서브텍스트 `13px Regular/grey-600`, 설명 `13px Regular/grey-400` | ✅ 완료 |
+| **LINK-03** | TDS 컬러 토큰 적용 | 배경 `grey-50 (#F9FAFB)`, 카드 테두리 `grey-200 (#E5E8EB)`, Toss Blue Light 칩 `#E8F3FF/#3182F6` | ✅ 완료 |
+| **LINK-04** | 재사용 컴포넌트 분리 | `LinkCard` (shadcn/ui Card+Badge 기반) + `LinkList` (ul/li 시맨틱 + 빈 상태 처리) | ✅ 완료 |
+| **LINK-05** | 더미 페이지 6개 | `/p/[slug]` 동적 라우트로 6개 시연용 페이지 제공 (`github`, `blog`, `contact`, `linkedin`, `portfolio`, `youtube`) | ✅ 완료 |
+
+#### 더미 페이지 라우트 목록
+| 경로 | 제목 | 설명 |
+| :--- | :--- | :--- |
+| `/p/github` | GitHub 코드 저장소 | 개발 프로젝트와 오픈소스 코드 모음 |
+| `/p/blog` | 기술 & 항해 블로그 | 공부 기록과 바이브 코딩, 항해 이야기 |
+| `/p/contact` | 이메일 연락하기 | 프로젝트 제안 및 방명록 문의 |
+| `/p/linkedin` | LinkedIn 프로필 | 경력 사항 및 네트워킹 |
+| `/p/portfolio` | 포트폴리오 사이트 | 작업물 쇼케이스 및 프로젝트 소개 |
+| `/p/youtube` | YouTube 채널 | 개발 브이로그 & 항해 영상 |
+
 
 ### F-2. 풀스택 확장 기능 (Phase 2 & 3 - Future Roadmap)
 | 기능 ID | 기능 명 | 상세 설명 | 계획 단계 |

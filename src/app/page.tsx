@@ -1,398 +1,373 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { LinkList } from "@/components/links/link-list";
+import { AddLinkDialog } from "@/components/links/add-link-dialog";
+import linksData from "@/data/links.json";
+import type { LinkItem } from "@/types/link";
 
-interface LinkItem {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  url: string;
-  emoji: string;
-  badge: string;
-  badgeBg: string;
-}
-
+/* ── 타입 ─────────────────────────────────────────────── */
 interface ProfileData {
   name: string;
   badge: string;
   bio: string;
-  theme: "nintendo" | "ocean" | "neobrutal";
-  links: LinkItem[];
 }
 
+/* ── 기본 프로필 및 기본 링크 ────────────────────────── */
 const DEFAULT_PROFILE: ProfileData = {
   name: "노기훈",
   badge: "⚓ 정부 항해사 & 💻 개발자",
-  bio: "🌊 바다 위에서는 안전한 항로를 이끄는 정부 항해사, 코드 위에서는 바이브 코딩으로 새로운 가능성을 개척하는 개발자 노기훈입니다.",
-  theme: "nintendo",
-  links: [
-    {
-      id: "1",
-      title: "GitHub 코드 저장소",
-      subtitle: "@tkflrnstk",
-      description: "개발 프로젝트와 오픈소스 코드 모음",
-      url: "https://github.com/tkflrnstk",
-      emoji: "🐙",
-      badge: "코드",
-      badgeBg: "bg-[#e60012] text-white",
-    },
-    {
-      id: "2",
-      title: "기술 & 항해 블로그",
-      subtitle: "blog.nolink.dev",
-      description: "공부 기록과 바이브 코딩, 항해 이야기",
-      url: "#",
-      emoji: "📝",
-      badge: "기록",
-      badgeBg: "bg-[#3d4f97] text-white",
-    },
-    {
-      id: "3",
-      title: "이메일 연락하기",
-      subtitle: "contact@example.com",
-      description: "프로젝트 제안 및 방명록 문의",
-      url: "mailto:contact@example.com",
-      emoji: "✉️",
-      badge: "문의",
-      badgeBg: "bg-[#206479] text-white",
-    },
-  ],
+  bio: "🌊 바다 위에서는 안전한 항로를 이끄는 정부 항해사이자, 코드 위에서는 바이브 코딩으로 새로운 가능성을 개척하는 개발자입니다.",
 };
 
-const LOCAL_STORAGE_KEY = "mylink_demo_profile_v1";
+const DEFAULT_LINKS = linksData as LinkItem[];
+const LOCAL_STORAGE_PROFILE_KEY = "mylink_demo_profile_v1";
+const LOCAL_STORAGE_LINKS_KEY = "mylink_demo_links_v1";
 
+/* ── 메인 컴포넌트 ────────────────────────────────────── */
 export default function Home() {
   const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
+  const [links, setLinks] = useState<LinkItem[]>(DEFAULT_LINKS);
   const [isMounted, setIsMounted] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
 
-  // 임시 편집 폼 상태
+  // 모달 상태
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
+
+  // 프로필 편집 폼 상태
   const [editName, setEditName] = useState("");
   const [editBadge, setEditBadge] = useState("");
   const [editBio, setEditBio] = useState("");
-  const [editTheme, setEditTheme] = useState<"nintendo" | "ocean" | "neobrutal">("nintendo");
 
-  // 1. 마운트 시 LocalStorage에서 읽어오기
   useEffect(() => {
     setIsMounted(true);
     try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setProfile(parsed);
+      // 프로필 로드
+      const savedProfile = localStorage.getItem(LOCAL_STORAGE_PROFILE_KEY);
+      if (savedProfile) {
+        setProfile(JSON.parse(savedProfile));
       } else {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_PROFILE));
+        localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(DEFAULT_PROFILE));
+      }
+
+      // 링크 목록 로드
+      const savedLinks = localStorage.getItem(LOCAL_STORAGE_LINKS_KEY);
+      if (savedLinks) {
+        setLinks(JSON.parse(savedLinks));
+      } else {
+        localStorage.setItem(LOCAL_STORAGE_LINKS_KEY, JSON.stringify(DEFAULT_LINKS));
       }
     } catch (e) {
       console.error("LocalStorage load error:", e);
     }
   }, []);
 
-  // 2. 편집 모달 열기
   const handleOpenEdit = () => {
     setEditName(profile.name);
     setEditBadge(profile.badge);
     setEditBio(profile.bio);
-    setEditTheme(profile.theme);
     setIsEditOpen(true);
   };
 
-  // 3. LocalStorage에 저장하기
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    const updated: ProfileData = {
-      ...profile,
-      name: editName,
-      badge: editBadge,
-      bio: editBio,
-      theme: editTheme,
-    };
+    const updated: ProfileData = { name: editName, badge: editBadge, bio: editBio };
     setProfile(updated);
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-    } catch (err) {
-      console.error("LocalStorage save error:", err);
+      localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.error("LocalStorage save error:", e);
     }
     setIsEditOpen(false);
   };
 
-  // 4. LocalStorage 데이터 초기화 (초기 상태 복원)
-  const handleResetData = () => {
-    if (confirm("프로필 데이터를 기본값으로 초기화하시겠습니까?")) {
+  const handleResetProfile = () => {
+    if (confirm("프로필과 링크를 초기값으로 되돌릴게요.")) {
       setProfile(DEFAULT_PROFILE);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_PROFILE));
+      setLinks(DEFAULT_LINKS);
+      localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(DEFAULT_PROFILE));
+      localStorage.setItem(LOCAL_STORAGE_LINKS_KEY, JSON.stringify(DEFAULT_LINKS));
       setIsEditOpen(false);
     }
   };
 
-  if (!isMounted) return null; // Hydration 방지
+  // 링크 추가 핸들러
+  const handleAddLink = (newLink: LinkItem) => {
+    const updatedLinks = [newLink, ...links];
+    setLinks(updatedLinks);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_LINKS_KEY, JSON.stringify(updatedLinks));
+    } catch (e) {
+      console.error("LocalStorage save links error:", e);
+    }
+  };
 
-  // 테마별 스타일 분기
-  const isNintendo = profile.theme === "nintendo";
-  const isOcean = profile.theme === "ocean";
-  const isNeobrutal = profile.theme === "neobrutal";
+  // 링크 삭제 핸들러
+  const handleDeleteLink = (id: string) => {
+    if (confirm("이 링크를 삭제할까요?")) {
+      const updatedLinks = links.filter((item) => item.id !== id);
+      setLinks(updatedLinks);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_LINKS_KEY, JSON.stringify(updatedLinks));
+      } catch (e) {
+        console.error("LocalStorage delete link error:", e);
+      }
+    }
+  };
+
+  if (!isMounted) return null;
 
   return (
-    <div
-      className={`min-h-screen font-sans p-4 sm:p-8 flex flex-col items-center justify-center select-none overflow-x-hidden transition-colors duration-300 ${
-        isNintendo
-          ? "bg-[#7a8aba] text-[#21242e]"
-          : isOcean
-          ? "bg-[#0a1f3d] text-white"
-          : "bg-[#E0F2FE] text-slate-900"
-      }`}
-    >
-      {/* ─────────────────────────────────────────────────────────────
-          시연 제어용 상단 플로팅 배너 (LocalStorage 시연 버튼)
-      ───────────────────────────────────────────────────────────── */}
-      <div className="w-full max-w-[460px] mb-3 flex items-center justify-between bg-black/80 text-white p-2.5 rounded-lg shadow-lg border border-white/20 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-bold">💾 LocalStorage 연동 시연 중</span>
+    /* TDS fill-weak (grey-50) 배경 */
+    <div className="min-h-screen bg-tds-fill-weak py-4 sm:py-6 px-3 sm:px-4 flex flex-col items-center w-full min-w-0 overflow-x-hidden">
+
+      {/* ── 시연 배너 — radius-tds-xl (16px) ── */}
+      <div className="w-full max-w-[460px] mb-4 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2
+                      bg-tds-grey-900 text-white px-3.5 sm:px-4 py-2.5 rounded-tds-xl
+                      text-[13px] leading-[1.25] min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+          <span className="font-semibold truncate">💾 LocalStorage 시연 중</span>
         </div>
-        <button
-          onClick={handleOpenEdit}
-          className="bg-yellow-400 hover:bg-yellow-300 text-black font-black px-3 py-1 rounded shadow-xs cursor-pointer transition-transform hover:scale-105"
-        >
-          ⚡ 프로필 편집
-        </button>
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
+          {/* TDS Primary Button — M size: h-8 radius-m(12px) label-s(13px/600) */}
+          <button
+            onClick={() => setIsAddLinkOpen(true)}
+            className="h-8 px-3 rounded-tds-m bg-tds-fill-brand hover:bg-tds-blue-600
+                       active:scale-[0.98] text-white text-[13px] font-semibold
+                       transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
+                       cursor-pointer shrink-0"
+          >
+            ➕ 링크 추가
+          </button>
+          <button
+            onClick={handleOpenEdit}
+            className="h-8 px-3 rounded-tds-m bg-tds-grey-800 hover:bg-tds-grey-700
+                       active:scale-[0.98] text-white text-[13px] font-semibold
+                       transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
+                       cursor-pointer shrink-0"
+          >
+            ⚡ 프로필 편집
+          </button>
+        </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          MAIN CHASSIS / CONTAINER
-      ───────────────────────────────────────────────────────────── */}
-      <div className="w-full max-w-[460px] flex flex-col gap-3">
-        
-        {/* 상단 헤더 / 브랜드 알약 뱃지 */}
-        <div className="flex items-center justify-between gap-2 px-1">
-          <div className="bg-white rounded-full px-3 py-1 border-2 border-[#e60012] flex items-center shadow-xs shrink-0">
-            <span className="text-[#e60012] font-black italic tracking-tighter text-sm">
-              MyLink
-            </span>
-            <span className="text-[10px] font-bold text-[#21242e] ml-1 uppercase">
-              .kr
-            </span>
-          </div>
-          <div className="text-[11px] font-bold opacity-80">
-            테마: <span className="uppercase font-black text-yellow-300">{profile.theme}</span>
-          </div>
-        </div>
+      {/* ── 메인 컨테이너 ── */}
+      <div className="w-full max-w-[460px] flex flex-col gap-4 min-w-0">
 
-        {/* 닌텐도 커맨드 슬래브 탭 바 */}
-        <div className="carbon-halftone border-2 border-[#21242e] px-3 py-2 flex items-center justify-between shadow-sm rounded-xs">
-          <div className="flex items-center gap-4 text-xs font-bold text-[#e48600]">
-            <span className="text-[#e48600] font-black border-b-2 border-[#e48600]">프로필</span>
-            <span className="text-white/70">링크 ({profile.links.length})</span>
-          </div>
-          <div className="bevel-button-amber px-2 py-0.5 text-[10px] font-bold text-[#21242e]">
-            로컬 저장됨
-          </div>
-        </div>
+        {/* 프로필 카드 — shadcn/ui Card (TDS radius-xl 16px, shadow-tds-1) */}
+        <Card className="w-full min-w-0 overflow-hidden">
+          <CardContent className="flex flex-col items-center text-center gap-4 sm:gap-5 py-6 sm:py-8 px-4 sm:px-6 min-w-0">
 
-        {/* 메인 프로필 카드 (닌텐도 입체 메탈 / 오션 / 네오브루탈) */}
-        <div
-          className={`p-5 sm:p-6 rounded-xs flex flex-col items-center text-center shadow-md relative border-2 ${
-            isNintendo
-              ? "bevel-plate bg-[#8ba1d4] border-[#3d4f97]"
-              : isOcean
-              ? "bg-white/10 backdrop-blur-md border-white/20 text-white"
-              : "bg-[#FDE047] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-black"
-          }`}
-        >
-          {/* 아바타 */}
-          <div className="relative mb-4">
-            <div className="w-24 h-24 bg-[#206479] border-3 border-[#21242e] rounded-2xl flex items-center justify-center shadow-md group hover:scale-105 transition-transform">
-              <span className="text-3xl font-black text-white">
+            {/* 아바타 — radius-tds-xl (16px), blue-50 배경 */}
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-tds-xl bg-tds-bg-brand-weak
+                            flex items-center justify-center shrink-0">
+              <span className="text-2xl sm:text-3xl font-bold text-tds-text-brand">
                 {profile.name.charAt(0)}
               </span>
             </div>
-            <div className="absolute -bottom-1.5 -right-1.5 bg-[#ecab37] border-2 border-[#21242e] w-8 h-8 rounded-lg flex items-center justify-center text-base shadow-sm">
-              ⚓
-            </div>
-          </div>
 
-          {/* 이름 */}
-          <h1 className="text-2xl font-black tracking-tight mb-2">
-            {profile.name}
-          </h1>
+            {/* 이름 — TDS h2: 24px / Bold(700) / leading-[1.30] / tracking-[-0.020em] */}
+            <h1 className="text-xl sm:text-2xl font-bold leading-[1.30] tracking-[-0.020em]
+                           text-tds-text-primary break-words max-w-full">
+              {profile.name}
+            </h1>
 
-          {/* 뱃지 */}
-          <div className="mb-4">
-            <span className="bg-white border border-[#21242e] px-3 py-1 text-xs font-bold text-[#21242e] shadow-xs rounded-full">
+            {/* 뱃지 — TDS chip-brand: radius-full, blue-50 bg, blue-500 text */}
+            <Badge variant="chip-brand">
               {profile.badge}
+            </Badge>
+
+            {/* 구분선 — border-default (grey-200) */}
+            <hr className="w-full border-tds-border-default" />
+
+            {/* 소개글 — TDS body-2: 15px / Regular / leading-[1.50] / tracking-[-0.005em] */}
+            <p className="text-[14px] sm:text-[15px] leading-[1.50] tracking-[-0.005em]
+                          text-tds-text-secondary text-left w-full break-words min-w-0">
+              {profile.bio}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* 링크 섹션 헤더 */}
+        <div className="flex items-center justify-between gap-2 px-1 mt-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            {/* label-m: 15px/600 */}
+            <span className="text-[14px] sm:text-[15px] font-semibold leading-[1.25] tracking-[-0.005em]
+                             text-tds-text-primary">
+              🔗 링크 바로가기
+            </span>
+            {/* body-3: 13px / text-disabled */}
+            <span className="text-[12px] sm:text-[13px] leading-[1.50] text-tds-text-disabled shrink-0">
+              (총 {links.length}개)
             </span>
           </div>
 
-          {/* 소개글 */}
-          <div
-            className={`w-full p-3 rounded-xs text-xs font-bold leading-relaxed text-left ${
-              isNintendo
-                ? "bevel-inset bg-[#dedede] text-[#21242e]"
-                : isOcean
-                ? "bg-white/10 border border-white/10 text-blue-100"
-                : "bg-white border-2 border-black text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
-            }`}
+          <button
+            onClick={() => setIsAddLinkOpen(true)}
+            className="text-[13px] font-semibold text-tds-text-brand hover:underline
+                       transition-all cursor-pointer shrink-0"
           >
-            <p>{profile.bio}</p>
-          </div>
+            + 새 링크 추가
+          </button>
         </div>
 
-        {/* 링크 바로가기 리스트 */}
-        <div className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-black uppercase tracking-wider flex items-center gap-1">
-              <span className="text-[#e60012]">●</span> 링크 바로가기 ({profile.links.length})
-            </span>
-            <span className="text-[10px] font-bold opacity-75">
-              클릭 시 이동 ➔
-            </span>
-          </div>
+        {/* 링크 목록 — LinkList */}
+        <LinkList links={links} onDelete={handleDeleteLink} />
 
-          {profile.links.map((link) => (
-            <a
-              key={link.id}
-              href={link.url}
-              target={link.url.startsWith("http") ? "_blank" : undefined}
-              rel="noopener noreferrer"
-              className={`p-3 rounded-xs flex items-center justify-between gap-3 transition-colors group cursor-pointer border-2 shadow-sm ${
-                isNintendo
-                  ? "bevel-plate-raised bg-[#8ba1d4] border-[#3d4f97] hover:bg-white"
-                  : isOcean
-                  ? "bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 text-white"
-                  : "bg-white border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FEF08A] text-black"
-              }`}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 bg-[#dedede] border-2 border-[#21242e] rounded-xs flex items-center justify-center text-xl shrink-0 group-hover:bg-[#ecab37] transition-colors text-black">
-                  {link.emoji}
-                </div>
-                <div className="text-left min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-black group-hover:text-[#e60012] transition-colors truncate">
-                      {link.title}
-                    </span>
-                    <span className={`${link.badgeBg} text-[9px] font-bold px-1.5 py-0.2 rounded-xs shrink-0`}>
-                      {link.badge}
-                    </span>
-                  </div>
-                  <div className="text-[11px] font-bold opacity-70 truncate mt-0.5">
-                    {link.description}
-                  </div>
-                </div>
-              </div>
+        {/* 푸터 — body-3: 13px / text-disabled */}
+        <footer className="text-center text-[12px] sm:text-[13px] leading-[1.50] text-tds-text-disabled py-4 break-words">
+          © 2026 {profile.name} · 마이링크 (MyLink)
+        </footer>
 
-              <div className="w-6 h-6 bevel-button-orange rounded-xs flex items-center justify-center text-[10px] font-black shrink-0 group-hover:scale-110 transition-transform">
-                ▶
-              </div>
-            </a>
-          ))}
-        </div>
-
-        {/* 푸터 */}
-        <div className="carbon-halftone border-2 border-[#21242e] p-3 rounded-xs text-white flex items-center justify-between text-[10px] font-bold shadow-sm mt-2">
-          <div className="text-[#9fbee7]">
-            © 2026 {profile.name} · 마이링크 (LocalStorage Demo)
-          </div>
-          <div className="bevel-button-amber px-2 py-0.5 text-[9px] text-[#21242e]">
-            로컬 전용
-          </div>
-        </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          시연용 프로필 편집 팝업 모달 (LocalStorage 조작)
-      ───────────────────────────────────────────────────────────── */}
+      {/* ── 새 링크 추가 다이얼로그 모달 ── */}
+      <AddLinkDialog
+        isOpen={isAddLinkOpen}
+        onClose={() => setIsAddLinkOpen(false)}
+        onAddLink={handleAddLink}
+      />
+
+      {/* ── 프로필 편집 모달 ──
+          shadcn/ui Card + TDS radius-tds-2xl (20px) + shadow-tds-3
+      ─── */}
       {isEditOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-[#8ba1d4] border-4 border-[#21242e] p-5 rounded-lg max-w-md w-full shadow-2xl text-[#21242e]">
-            <div className="flex items-center justify-between border-b-2 border-[#21242e] pb-2 mb-4">
-              <h2 className="text-base font-black flex items-center gap-1.5">
-                <span>⚡ LocalStorage 데이터 실시간 편집</span>
+        <div
+          className="fixed inset-0 bg-tds-overlay-scrim backdrop-blur-sm z-50
+                     flex items-center justify-center p-3 sm:p-4 min-w-0"
+          onClick={(e) => e.target === e.currentTarget && setIsEditOpen(false)}
+        >
+          {/* TDS dialog: radius-2xl (20px), shadow-tds-3, 24px inner padding */}
+          <div className="w-full max-w-md bg-white rounded-tds-2xl shadow-tds-3 p-4 sm:p-6 max-h-[90vh] overflow-y-auto min-w-0">
+
+            {/* 모달 헤더 */}
+            <div className="flex items-center justify-between mb-4 sm:mb-6 min-w-0">
+              {/* title-1: 18px/600 */}
+              <h2 className="text-base sm:text-lg font-semibold leading-[1.45] tracking-[-0.010em]
+                             text-tds-text-primary truncate">
+                ⚡ 프로필 편집
               </h2>
               <button
                 onClick={() => setIsEditOpen(false)}
-                className="bg-[#e60012] text-white font-black px-2 py-0.5 text-xs rounded border border-black cursor-pointer"
+                className="w-8 h-8 flex items-center justify-center rounded-tds-s
+                           text-tds-text-disabled hover:text-tds-text-primary
+                           hover:bg-tds-fill-secondary
+                           transition-colors duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
+                           cursor-pointer text-lg shrink-0"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="flex flex-col gap-3 text-xs font-bold">
-              <div>
-                <label className="block mb-1 text-[11px]">이름:</label>
+            {/* 폼 */}
+            <form onSubmit={handleSaveProfile} className="flex flex-col gap-3.5 sm:gap-4 min-w-0">
+
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <label className="text-[13px] font-semibold leading-[1.25] text-tds-text-secondary">
+                  이름
+                </label>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full bg-white border-2 border-[#21242e] p-2 text-xs focus:outline-none"
                   required
+                  className="h-11 sm:h-12 w-full rounded-tds-m border border-tds-border-default
+                             bg-tds-fill-secondary px-3.5 sm:px-4
+                             text-[14px] sm:text-[15px] leading-[1.50] tracking-[-0.005em] text-tds-text-primary
+                             placeholder:text-tds-text-disabled
+                             focus:outline-none focus:bg-white
+                             focus:border-tds-border-focused focus:ring-2
+                             focus:ring-tds-border-focused/20
+                             transition-all duration-[200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] min-w-0"
                 />
               </div>
 
-              <div>
-                <label className="block mb-1 text-[11px]">뱃지 라벨:</label>
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <label className="text-[13px] font-semibold leading-[1.25] text-tds-text-secondary">
+                  뱃지 라벨
+                </label>
                 <input
                   type="text"
                   value={editBadge}
                   onChange={(e) => setEditBadge(e.target.value)}
-                  className="w-full bg-white border-2 border-[#21242e] p-2 text-xs focus:outline-none"
                   required
+                  className="h-11 sm:h-12 w-full rounded-tds-m border border-tds-border-default
+                             bg-tds-fill-secondary px-3.5 sm:px-4
+                             text-[14px] sm:text-[15px] leading-[1.50] tracking-[-0.005em] text-tds-text-primary
+                             placeholder:text-tds-text-disabled
+                             focus:outline-none focus:bg-white
+                             focus:border-tds-border-focused focus:ring-2
+                             focus:ring-tds-border-focused/20
+                             transition-all duration-[200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] min-w-0"
                 />
               </div>
 
-              <div>
-                <label className="block mb-1 text-[11px]">소개글:</label>
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <label className="text-[13px] font-semibold leading-[1.25] text-tds-text-secondary">
+                  소개글
+                </label>
                 <textarea
                   value={editBio}
                   onChange={(e) => setEditBio(e.target.value)}
                   rows={3}
-                  className="w-full bg-white border-2 border-[#21242e] p-2 text-xs focus:outline-none"
-                  required
+                  className="w-full rounded-tds-m border border-tds-border-default
+                             bg-tds-fill-secondary px-3.5 sm:px-4 py-2.5 sm:py-3
+                             text-[14px] sm:text-[15px] leading-[1.50] tracking-[-0.005em] text-tds-text-primary
+                             placeholder:text-tds-text-disabled
+                             focus:outline-none focus:bg-white
+                             focus:border-tds-border-focused focus:ring-2
+                             focus:ring-tds-border-focused/20
+                             transition-all duration-[200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
+                             resize-none min-w-0"
                 />
               </div>
 
-              <div>
-                <label className="block mb-1 text-[11px]">테마 선택:</label>
-                <select
-                  value={editTheme}
-                  onChange={(e) => setEditTheme(e.target.value as any)}
-                  className="w-full bg-white border-2 border-[#21242e] p-2 text-xs focus:outline-none font-bold"
-                >
-                  <option value="nintendo">🎮 닌텐도 레트로 메탈 테마</option>
-                  <option value="ocean">🌊 오션 블루 글라스 테마</option>
-                  <option value="neobrutal">⚡ 네오브루탈리즘 팝 테마</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#3d4f97]">
+              {/* 액션 버튼 */}
+              <div className="flex items-center justify-between pt-4
+                              border-t border-tds-border-default mt-2 min-w-0">
                 <button
                   type="button"
-                  onClick={handleResetData}
-                  className="bg-zinc-300 hover:bg-zinc-400 text-black px-3 py-1.5 rounded border border-black text-xs font-bold cursor-pointer"
+                  onClick={handleResetProfile}
+                  className="text-[13px] font-semibold leading-[1.25]
+                             text-tds-text-disabled hover:text-tds-text-secondary
+                             transition-colors duration-[120ms] cursor-pointer shrink-0"
                 >
-                  초기화
+                  데이터 초기화
                 </button>
-                <div className="flex items-center gap-2">
+
+                <div className="flex gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => setIsEditOpen(false)}
-                    className="bg-white text-black px-3 py-1.5 rounded border border-black text-xs font-bold cursor-pointer"
+                    className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-tds-m bg-tds-fill-secondary
+                               hover:bg-tds-grey-200 text-tds-text-primary
+                               text-[13px] sm:text-[15px] font-semibold leading-[1.25] tracking-[-0.005em]
+                               transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
+                               active:scale-[0.98] cursor-pointer"
                   >
                     취소
                   </button>
                   <button
                     type="submit"
-                    className="bevel-button-orange px-4 py-1.5 text-xs font-black uppercase cursor-pointer"
+                    className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-tds-m bg-tds-fill-brand
+                               hover:bg-tds-blue-600 text-white
+                               text-[13px] sm:text-[15px] font-semibold leading-[1.25] tracking-[-0.005em]
+                               transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
+                               active:scale-[0.98] cursor-pointer"
                   >
-                    LocalStorage에 저장 💾
+                    저장 💾
                   </button>
                 </div>
               </div>
+
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }
