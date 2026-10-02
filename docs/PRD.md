@@ -1,9 +1,9 @@
 # 📄 마이링크 (MyLink) 서비스 PRD (제품 기능 명세서)
 
 > **프로젝트 명**: 마이링크 (MyLink)  
-> **버전**: v1.2.0 (사용자 시나리오 & ASCII 와이어프레임 확정)  
-> **작성일**: 2026-09-30  
-> **문서 상태**: Approved (요구사항 및 시나리오 확정)
+> **버전**: v1.3.0 (shadcn/ui 디자인 시스템 기반 구축 확정)  
+> **작성일**: 2026-10-02  
+> **문서 상태**: Approved (디자인 시스템 & 요구사항 확정)
 
 ---
 
@@ -11,6 +11,9 @@
 
 ### 1.1 배경 및 목적
 * **개요**: 누구나 자신만의 프로필과 주요 링크(소셜 미디어, 블로그, 포트폴리오, 연락처 등)를 하나의 가볍고 스타일리시한 웹 페이지로 묶어 공유할 수 있는 **링크트리 클론 서비스**입니다.
+* **디자인 시스템 원칙**:
+  - 앞으로 진행되는 모든 UI 컴포넌트 개발 및 스타일 확장은 **[shadcn/ui](https://ui.shadcn.com/)** 디자인 시스템을 기반으로 구성합니다.
+  - 최신 **Tailwind CSS v4 (CSS-First 아키텍처, 별도 config 파일 불필요)**와 결합하여 고품질의 재사용 가능한 모듈러 UI를 제공합니다.
 * **시연(Demo) 및 단계별 전략**:
   - 현재 시연 단계에서는 백엔드/대시보드 구축 전 **`LocalStorage` 기반의 인라인 프로필 편집 및 동적 테마 전환**을 통해 핵심 사용자 경험(UX)을 시연합니다.
 
@@ -81,7 +84,19 @@
 
 ---
 
-## 4. 상세 기능 명세 (Detailed Specifications)
+## 4. 디자인 시스템 명세 (Design System: shadcn/ui)
+
+### 4.1 shadcn/ui 기반 아키텍처 원칙
+* **컴포넌트 기반 아키텍처**: 모든 핵심 UI 요소(버튼, 다이얼로그 모달, 카드, 뱃지, 입력 인풋, 드롭다운 등)는 `shadcn/ui` 컴포넌트(`src/components/ui/*`)를 기반으로 확장·커스터마이징합니다.
+* **Tailwind CSS v4 (CSS-First)**:
+  - 별도의 `tailwind.config.js` 없이 `src/app/globals.css`의 `@theme` 및 CSS 변수 체계를 통해 디자인 토큰(색상, 테두리, 반경, 폰트)을 중앙 집중 관리합니다.
+  - 유틸리티 클래스 병합을 위해 `src/lib/utils.ts`의 표준 `cn` (`clsx` + `tailwind-merge`)을 필수로 사용합니다.
+* **아이콘 시스템**: `lucide-react`를 표준 아이콘 세트로 채택합니다.
+* **접근성 (Accessibility)**: Radix UI / Base UI 원시 컴포넌트를 활용하여 키보드 내비게이션, 포커스 링, 스크린 리더 표준을 준수합니다.
+
+---
+
+## 5. 상세 기능 명세 (Detailed Specifications)
 
 ### F-1. 시연용 로컬 데이터 관리 (LocalStorage Demo - Phase 1)
 | 기능 ID | 기능 명 | 상세 설명 | 구현 상태 |
@@ -90,34 +105,37 @@
 | **DEMO-02** | 인라인 프로필 편집 | 대시보드 없이 팝업 모달에서 프로필 실시간 수정 및 LocalStorage 반영 | ✅ 완료 |
 | **DEMO-03** | 테마 스위처 | 🎮 `닌텐도 레트로 메탈` / 🌊 `오션 블루 글라스` / ⚡ `네오브루탈리즘 팝` 테마 실시간 전환 | ✅ 완료 |
 | **DEMO-04** | 데이터 초기화 | 시연 복구를 위해 로컬 데이터를 기본 프로필(노기훈, 정부 항해사)로 리셋하는 기능 | ✅ 완료 |
+| **DS-01** | shadcn/ui 환경 구축 | Tailwind CSS v4 + components.json + utils.ts 초기화 완료 | ✅ 완료 |
 
 ### F-2. 풀스택 확장 기능 (Phase 2 & 3 - Future Roadmap)
 | 기능 ID | 기능 명 | 상세 설명 | 계획 단계 |
 | :--- | :--- | :--- | :--- |
 | **AUTH-01** | 사용자 인증 | Google, GitHub 소셜 로그인 및 이메일 가입 (Firebase/Supabase) | Phase 2 |
-| **DASH-01** | 관리자 대시보드 | 로그인한 유저 전용 링크/프로필 편집 대시보드 | Phase 2 |
+| **DASH-01** | 관리자 대시보드 | 로그인한 유저 전용 링크/프로필 편집 대시보드 (shadcn/ui Form, Card 기반) | Phase 2 |
 | **LINK-02** | Drag & Drop 순서 변경 | 마우스 드래그 기반 링크 카드 순서 재배치 | Phase 3 |
 | **STAT-01** | 클릭 수 & 통계 | 공개 링크별 실시간 클릭 트래킹(Click Count) 및 방문자 수 | Phase 3 |
 
 ---
 
-## 5. 기술 아키텍처 (Technical Architecture)
+## 6. 기술 아키텍처 (Technical Architecture)
 
 * **Framework**: Next.js 16 (App Router)
 * **Language**: TypeScript 5
-* **Styling**: Tailwind CSS v4 + Custom Bevel / Glass / Neobrutalism CSS
+* **Design System**: **shadcn/ui** (`components.json`, `@/components/ui`)
+* **Styling**: Tailwind CSS v4 (CSS-first, `@theme` 변수 기반)
+* **Icons**: `lucide-react`
 * **Storage**: Browser `localStorage` (Phase 1) ➔ Firebase Firestore / Supabase PostgreSQL (Phase 2)
 
 ---
 
-## 6. 단계별 로드맵 (Milestones)
+## 7. 단계별 로드맵 (Milestones)
 
 | 단계 | 주요 작업 내용 | 상태 |
 | :--- | :--- | :--- |
-| **Phase 1 (Current Demo)** | • LocalStorage 기반 시연용 프로필 페이지<br>• 실시간 데이터/테마 편집 모달<br>• 닌텐도/오션/네오브루탈 디자인 지원 | **✅ 완료 (시연 중)** |
-| **Phase 2 (Full-stack MVP)** | • Firebase/Supabase Auth & Firestore 연동<br>• `/[username]` 동적 라우팅 및 대시보드 | 대기 |
+| **Phase 1 (Current Demo)** | • LocalStorage 기반 시연용 프로필 페이지<br>• 실시간 데이터/테마 편집 모달<br>• shadcn/ui + Tailwind v4 디자인 시스템 환경 구축 완료 | **✅ 완료 (시연 중)** |
+| **Phase 2 (Full-stack MVP)** | • Firebase/Supabase Auth & Firestore 연동<br>• `/[username]` 동적 라우팅 및 shadcn/ui 기반 대시보드 | 대기 |
 | **Phase 3 (Production)** | • Drag & Drop, 클릭 통계 분석, 커스텀 도메인 배포 | 대기 |
 
 ---
 
-> **비고**: 본 PRD 문서는 사용자 시나리오(방문자/소유자 관점) 및 ASCII 와이어프레임이 반영되어 `docs/PRD.md`에 최종 저장되었습니다.
+> **비고**: 본 PRD 문서는 shadcn/ui 기반 디자인 시스템 구축 및 Tailwind CSS v4 CSS-first 아키텍처 원칙이 반영되어 `docs/PRD.md`에 최종 저장되었습니다.
