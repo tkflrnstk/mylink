@@ -10,231 +10,79 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --color-toss-blue: #3182f6;
+  --color-toss-blue-light: #e8f3ff;
+  --color-toss-blue-dark: #1b64da;
+
+  --color-toss-grey-50: #f9fafb;
+  --color-toss-grey-100: #f2f4f6;
+  --color-toss-grey-200: #e5e8eb;
+  --color-toss-grey-300: #d1d6db;
+  --color-toss-grey-400: #b0b8c1;
+  --color-toss-grey-500: #8b95a1;
+  --color-toss-grey-600: #6b7684;
+  --color-toss-grey-700: #4e5968;
+  --color-toss-grey-800: #333d4b;
+  --color-toss-grey-900: #191f28;
+
+  --radius-toss-sm: 8px;
+  --radius-toss-md: 12px;
+  --radius-toss-lg: 16px;
+  --radius-toss-xl: 20px;
+  --radius-toss-2xl: 24px;
 }
 
 :root {
-  --canvas: #7a8aba;
-  --periwinkle: #8ba1d4;
-  --sky: #9fbee7;
-  --lavender: #acace7;
-  --ice: #c0d5e6;
-  --chrome-indigo: #3d4f97;
-  --muted-indigo: #60619c;
-  --carbon: #21242e;
-  --platinum: #dedede;
-  --primary-red: #e60012;
-  --signal-orange: #f68d1f;
-  --amber: #ecab37;
-  --nav-gold: #e48600;
-  --systems-teal: #206479;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Toss Design System Light Theme Tokens */
+  --background: #f2f4f6;
+  --foreground: #191f28;
+
+  --card: #ffffff;
+  --card-foreground: #191f28;
+
+  --popover: #ffffff;
+  --popover-foreground: #191f28;
+
+  --primary: #3182f6;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f2f4f6;
+  --secondary-foreground: #4e5968;
+
+  --muted: #f2f4f6;
+  --muted-foreground: #8b95a1;
+
+  --accent: #e8f3ff;
+  --accent-foreground: #3182f6;
+
+  --destructive: #f04452;
+  --destructive-foreground: #ffffff;
+
+  --border: #e5e8eb;
+  --input: #e5e8eb;
+  --ring: #3182f6;
+
+  --radius: 1rem;
 }
 
 body {
-  background-color: var(--canvas);
-  overflow-x: auto;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 2001 Console Hardware - Halftone Speaker Grille Texture */
-.carbon-halftone {
-  background-color: #21242e;
-  background-image: radial-gradient(#3a3e4f 20%, transparent 20%);
-  background-size: 4px 4px;
+/* Toss Button Active Click Effect */
+.toss-press {
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.toss-press:active {
+  transform: scale(0.98);
 }
 
-/* Beveled Metal Plate Treatments */
-.bevel-plate {
-  background-color: #7a8aba;
-  border-top: 1px solid #b2c2eb;
-  border-left: 1px solid #b2c2eb;
-  border-right: 2px solid #3d4f97;
-  border-bottom: 2px solid #3d4f97;
-}
-
-.bevel-plate-raised {
-  background-color: #8ba1d4;
-  border-top: 1px solid #d0deff;
-  border-left: 1px solid #d0deff;
-  border-right: 2px solid #3d4f97;
-  border-bottom: 2px solid #3d4f97;
-}
-
-.bevel-inset {
-  background-color: #dedede;
-  border-top: 2px solid #3d4f97;
-  border-left: 2px solid #3d4f97;
-  border-right: 1px solid #ffffff;
-  border-bottom: 1px solid #ffffff;
-}
-
-.bevel-button-amber {
-  background-color: #ecab37;
-  border-top: 1px solid #ffe391;
-  border-left: 1px solid #ffe391;
-  border-right: 2px solid #9e690c;
-  border-bottom: 2px solid #9e690c;
-  color: #21242e;
-}
-.bevel-button-amber:active {
-  border-top: 2px solid #9e690c;
-  border-left: 2px solid #9e690c;
-  border-right: 1px solid #ffe391;
-  border-bottom: 1px solid #ffe391;
-  background-color: #e48600;
-}
-
-.bevel-button-orange {
-  background-color: #f68d1f;
-  border-top: 1px solid #ffc182;
-  border-left: 1px solid #ffc182;
-  border-right: 2px solid #a84f00;
-  border-bottom: 2px solid #a84f00;
-  color: #ffffff;
-}
-.bevel-button-orange:active {
-  border-top: 2px solid #a84f00;
-  border-left: 2px solid #a84f00;
-  border-right: 1px solid #ffc182;
-  border-bottom: 1px solid #ffc182;
-  background-color: #e48600;
-}
-
-/* Chamfered (Cut-Corner) Geometry */
-.chamfer-card {
-  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
-}
-
-/* Console Box-Art Display Typography */
-.box-art-text {
-  color: #ffffff;
-  font-weight: 900;
-  font-style: italic;
-  text-transform: uppercase;
-  text-shadow: 
-    2px 2px 0px #21242e,
-    -1px -1px 0px #3d4f97,
-    2px -1px 0px #21242e,
-    -1px 2px 0px #21242e,
-    4px 4px 0px rgba(33, 36, 46, 0.6);
-}
-
-/* Circuit-board texture overlay for Systems/Hero field */
-.circuit-overlay {
-  background-image: 
-    linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.08) 1px, transparent 1px);
-  background-size: 16px 16px;
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
-  }
+/* Toss Soft Card Shadow */
+.toss-card-shadow {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
 }

@@ -1,9 +1,9 @@
 # 📄 마이링크 (MyLink) 서비스 PRD (제품 기능 명세서)
 
 > **프로젝트 명**: 마이링크 (MyLink)  
-> **버전**: v1.3.0 (shadcn/ui 디자인 시스템 기반 구축 확정)  
+> **버전**: v1.4.0 (shadcn/ui + 토스 디자인 시스템 TDS 구축 확정)  
 > **작성일**: 2026-10-02  
-> **문서 상태**: Approved (디자인 시스템 & 요구사항 확정)
+> **문서 상태**: Approved (TDS 디자인 시스템 & 요구사항 확정)
 
 ---
 
@@ -12,7 +12,7 @@
 ### 1.1 배경 및 목적
 * **개요**: 누구나 자신만의 프로필과 주요 링크(소셜 미디어, 블로그, 포트폴리오, 연락처 등)를 하나의 가볍고 스타일리시한 웹 페이지로 묶어 공유할 수 있는 **링크트리 클론 서비스**입니다.
 * **디자인 시스템 원칙**:
-  - 앞으로 진행되는 모든 UI 컴포넌트 개발 및 스타일 확장은 **[shadcn/ui](https://ui.shadcn.com/)** 디자인 시스템을 기반으로 구성합니다.
+  - 모든 UI 컴포넌트 개발 및 스타일 확장은 **[shadcn/ui](https://ui.shadcn.com/)** 컴포넌트 아키텍처 위에 **토스 디자인 시스템(TDS - Toss Design System)**의 비주얼 언어(토스 블루 `#3182F6`, 부드러운 곡률 `rounded-2xl`, 고대비 텍스트, 경쾌한 탭 인터랙션)를 입혀 구축합니다.
   - 최신 **Tailwind CSS v4 (CSS-First 아키텍처, 별도 config 파일 불필요)**와 결합하여 고품질의 재사용 가능한 모듈러 UI를 제공합니다.
 * **시연(Demo) 및 단계별 전략**:
   - 현재 시연 단계에서는 백엔드/대시보드 구축 전 **`LocalStorage` 기반의 인라인 프로필 편집 및 동적 테마 전환**을 통해 핵심 사용자 경험(UX)을 시연합니다.
@@ -84,15 +84,20 @@
 
 ---
 
-## 4. 디자인 시스템 명세 (Design System: shadcn/ui)
+## 4. 디자인 시스템 명세 (Design System: shadcn/ui + Toss Design System)
 
-### 4.1 shadcn/ui 기반 아키텍처 원칙
-* **컴포넌트 기반 아키텍처**: 모든 핵심 UI 요소(버튼, 다이얼로그 모달, 카드, 뱃지, 입력 인풋, 드롭다운 등)는 `shadcn/ui` 컴포넌트(`src/components/ui/*`)를 기반으로 확장·커스터마이징합니다.
+### 4.1 shadcn/ui + TDS 융합 원칙
+* **컴포넌트 기반 아키텍처**: 모든 핵심 UI 요소(버튼, 다이얼로그 모달, 카드, 뱃지, 입력 인풋 등)는 `shadcn/ui` 컴포넌트(`src/components/ui/*`)를 기반으로 확장·커스터마이징합니다.
+* **토스 디자인 시스템(TDS) 스타일 토큰**:
+  - **Color**: 시그니처 토스 블루(`--color-toss-blue: #3182F6`), 소프트 라이트 배경(`--color-toss-grey-50: #F9FAFB`, `grey-100: #F2F4F6`), 선명한 먹색 텍스트(`grey-900: #191F28`).
+  - **Radius**: 부드럽고 넉넉한 모서리 곡률(`rounded-2xl` / `16px`, `rounded-3xl` / `24px`).
+  - **Shadow**: 인위적인 드롭섀도우 대신 극도로 부드러운 소프트 카드 섀도우(`shadow-[0_2px_10px_rgba(0,0,0,0.04)]`).
+  - **Interaction**: 카드 및 버튼 클릭 시 미세한 스케일 다운 피드백(`active:scale-[0.98]`).
 * **Tailwind CSS v4 (CSS-First)**:
-  - 별도의 `tailwind.config.js` 없이 `src/app/globals.css`의 `@theme` 및 CSS 변수 체계를 통해 디자인 토큰(색상, 테두리, 반경, 폰트)을 중앙 집중 관리합니다.
-  - 유틸리티 클래스 병합을 위해 `src/lib/utils.ts`의 표준 `cn` (`clsx` + `tailwind-merge`)을 필수로 사용합니다.
+  - 별도의 `tailwind.config.js` 없이 `src/app/globals.css`의 `@theme` 및 CSS 변수 체계를 통해 디자인 토큰을 중앙 집중 관리합니다.
+  - 클래스 병합 유틸리티로 `src/lib/utils.ts`의 표준 `cn` (`clsx` + `tailwind-merge`)을 필수로 사용합니다.
 * **아이콘 시스템**: `lucide-react`를 표준 아이콘 세트로 채택합니다.
-* **접근성 (Accessibility)**: Radix UI / Base UI 원시 컴포넌트를 활용하여 키보드 내비게이션, 포커스 링, 스크린 리더 표준을 준수합니다.
+* **상세 명세 문서**: 구체적인 색상 코드 및 타이포그래피 계층은 [`docs/design.md`](file:///c:/Users/pj/pjwk1/docs/design.md) 문서를 준수합니다.
 
 ---
 

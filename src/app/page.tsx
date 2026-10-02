@@ -1,6 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  ExternalLink,
+  ChevronRight,
+  Anchor,
+  Code2,
+  Sparkles,
+  Settings2,
+  RotateCcw,
+  CheckCircle2,
+} from "lucide-react";
 
 interface LinkItem {
   id: string;
@@ -10,32 +23,30 @@ interface LinkItem {
   url: string;
   emoji: string;
   badge: string;
-  badgeBg: string;
 }
 
 interface ProfileData {
   name: string;
   badge: string;
   bio: string;
-  theme: "nintendo" | "ocean" | "neobrutal";
+  theme: "toss" | "nintendo" | "ocean";
   links: LinkItem[];
 }
 
 const DEFAULT_PROFILE: ProfileData = {
   name: "노기훈",
-  badge: "⚓ 정부 항해사 & 💻 개발자",
-  bio: "🌊 바다 위에서는 안전한 항로를 이끄는 정부 항해사, 코드 위에서는 바이브 코딩으로 새로운 가능성을 개척하는 개발자 노기훈입니다.",
-  theme: "nintendo",
+  badge: "정부 항해사 & 개발자",
+  bio: "바다 위에서는 안전한 항로를 이끄는 정부 항해사, 코드 위에서는 바이브 코딩으로 새로운 가능성을 개척하는 개발자입니다.",
+  theme: "toss",
   links: [
     {
       id: "1",
       title: "GitHub 코드 저장소",
-      subtitle: "@tkflrnstk",
+      subtitle: "github.com/tkflrnstk",
       description: "개발 프로젝트와 오픈소스 코드 모음",
       url: "https://github.com/tkflrnstk",
       emoji: "🐙",
-      badge: "코드",
-      badgeBg: "bg-[#e60012] text-white",
+      badge: "GitHub",
     },
     {
       id: "2",
@@ -44,43 +55,38 @@ const DEFAULT_PROFILE: ProfileData = {
       description: "공부 기록과 바이브 코딩, 항해 이야기",
       url: "#",
       emoji: "📝",
-      badge: "기록",
-      badgeBg: "bg-[#3d4f97] text-white",
+      badge: "Tech Blog",
     },
     {
       id: "3",
       title: "이메일 연락하기",
       subtitle: "contact@example.com",
-      description: "프로젝트 제안 및 방명록 문의",
+      description: "프로젝트 제안 및 협업 문의",
       url: "mailto:contact@example.com",
       emoji: "✉️",
-      badge: "문의",
-      badgeBg: "bg-[#206479] text-white",
+      badge: "Contact",
     },
   ],
 };
 
-const LOCAL_STORAGE_KEY = "mylink_demo_profile_v1";
+const LOCAL_STORAGE_KEY = "mylink_toss_profile_v1";
 
 export default function Home() {
   const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
   const [isMounted, setIsMounted] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
-  // 임시 편집 폼 상태
+  // 편집 폼 상태
   const [editName, setEditName] = useState("");
   const [editBadge, setEditBadge] = useState("");
   const [editBio, setEditBio] = useState("");
-  const [editTheme, setEditTheme] = useState<"nintendo" | "ocean" | "neobrutal">("nintendo");
 
-  // 1. 마운트 시 LocalStorage에서 읽어오기
   useEffect(() => {
     setIsMounted(true);
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        setProfile(parsed);
+        setProfile(JSON.parse(saved));
       } else {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_PROFILE));
       }
@@ -89,16 +95,13 @@ export default function Home() {
     }
   }, []);
 
-  // 2. 편집 모달 열기
   const handleOpenEdit = () => {
     setEditName(profile.name);
     setEditBadge(profile.badge);
     setEditBio(profile.bio);
-    setEditTheme(profile.theme);
     setIsEditOpen(true);
   };
 
-  // 3. LocalStorage에 저장하기
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     const updated: ProfileData = {
@@ -106,7 +109,6 @@ export default function Home() {
       name: editName,
       badge: editBadge,
       bio: editBio,
-      theme: editTheme,
     };
     setProfile(updated);
     try {
@@ -117,7 +119,6 @@ export default function Home() {
     setIsEditOpen(false);
   };
 
-  // 4. LocalStorage 데이터 초기화 (초기 상태 복원)
   const handleResetData = () => {
     if (confirm("프로필 데이터를 기본값으로 초기화하시겠습니까?")) {
       setProfile(DEFAULT_PROFILE);
@@ -126,126 +127,74 @@ export default function Home() {
     }
   };
 
-  if (!isMounted) return null; // Hydration 방지
-
-  // 테마별 스타일 분기
-  const isNintendo = profile.theme === "nintendo";
-  const isOcean = profile.theme === "ocean";
-  const isNeobrutal = profile.theme === "neobrutal";
+  if (!isMounted) return null;
 
   return (
-    <div
-      className={`min-h-screen font-sans p-4 sm:p-8 flex flex-col items-center justify-center select-none overflow-x-hidden transition-colors duration-300 ${
-        isNintendo
-          ? "bg-[#7a8aba] text-[#21242e]"
-          : isOcean
-          ? "bg-[#0a1f3d] text-white"
-          : "bg-[#E0F2FE] text-slate-900"
-      }`}
-    >
+    <div className="min-h-screen bg-[#F2F4F6] text-[#191F28] font-sans px-4 py-8 sm:py-12 flex flex-col items-center justify-center">
+      
       {/* ─────────────────────────────────────────────────────────────
-          시연 제어용 상단 플로팅 배너 (LocalStorage 시연 버튼)
+          시연용 컨트롤러 상단 배너 (TDS 스타일)
       ───────────────────────────────────────────────────────────── */}
-      <div className="w-full max-w-[460px] mb-3 flex items-center justify-between bg-black/80 text-white p-2.5 rounded-lg shadow-lg border border-white/20 text-xs">
+      <div className="w-full max-w-[440px] mb-4 flex items-center justify-between bg-white border border-[#E5E8EB] px-4 py-2.5 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-xs">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-bold">💾 LocalStorage 연동 시연 중</span>
+          <span className="w-2 h-2 rounded-full bg-[#3182F6] animate-pulse" />
+          <span className="font-semibold text-[#4E5968]">토스 디자인 시스템 (TDS)</span>
         </div>
         <button
           onClick={handleOpenEdit}
-          className="bg-yellow-400 hover:bg-yellow-300 text-black font-black px-3 py-1 rounded shadow-xs cursor-pointer transition-transform hover:scale-105"
+          className="flex items-center gap-1.5 bg-[#E8F3FF] hover:bg-[#D4E8FF] text-[#3182F6] font-semibold px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
         >
-          ⚡ 프로필 편집
+          <Settings2 className="w-3.5 h-3.5" />
+          <span>프로필 편집</span>
         </button>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          MAIN CHASSIS / CONTAINER
+          MAIN PROFILE CONTAINER (Max 440px)
       ───────────────────────────────────────────────────────────── */}
-      <div className="w-full max-w-[460px] flex flex-col gap-3">
+      <div className="w-full max-w-[440px] flex flex-col gap-3">
         
-        {/* 상단 헤더 / 브랜드 알약 뱃지 */}
-        <div className="flex items-center justify-between gap-2 px-1">
-          <div className="bg-white rounded-full px-3 py-1 border-2 border-[#e60012] flex items-center shadow-xs shrink-0">
-            <span className="text-[#e60012] font-black italic tracking-tighter text-sm">
-              MyLink
-            </span>
-            <span className="text-[10px] font-bold text-[#21242e] ml-1 uppercase">
-              .kr
-            </span>
-          </div>
-          <div className="text-[11px] font-bold opacity-80">
-            테마: <span className="uppercase font-black text-yellow-300">{profile.theme}</span>
-          </div>
-        </div>
-
-        {/* 닌텐도 커맨드 슬래브 탭 바 */}
-        <div className="carbon-halftone border-2 border-[#21242e] px-3 py-2 flex items-center justify-between shadow-sm rounded-xs">
-          <div className="flex items-center gap-4 text-xs font-bold text-[#e48600]">
-            <span className="text-[#e48600] font-black border-b-2 border-[#e48600]">프로필</span>
-            <span className="text-white/70">링크 ({profile.links.length})</span>
-          </div>
-          <div className="bevel-button-amber px-2 py-0.5 text-[10px] font-bold text-[#21242e]">
-            로컬 저장됨
-          </div>
-        </div>
-
-        {/* 메인 프로필 카드 (닌텐도 입체 메탈 / 오션 / 네오브루탈) */}
-        <div
-          className={`p-5 sm:p-6 rounded-xs flex flex-col items-center text-center shadow-md relative border-2 ${
-            isNintendo
-              ? "bevel-plate bg-[#8ba1d4] border-[#3d4f97]"
-              : isOcean
-              ? "bg-white/10 backdrop-blur-md border-white/20 text-white"
-              : "bg-[#FDE047] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-black"
-          }`}
-        >
+        {/* 프로필 카드 (TDS Card) */}
+        <Card className="p-6 sm:p-7 rounded-3xl border border-[#E5E8EB] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] flex flex-col items-center text-center">
+          
           {/* 아바타 */}
           <div className="relative mb-4">
-            <div className="w-24 h-24 bg-[#206479] border-3 border-[#21242e] rounded-2xl flex items-center justify-center shadow-md group hover:scale-105 transition-transform">
-              <span className="text-3xl font-black text-white">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[#3182F6] to-[#68A6FF] flex items-center justify-center text-white shadow-md">
+              <span className="text-3xl font-bold select-none">
                 {profile.name.charAt(0)}
               </span>
             </div>
-            <div className="absolute -bottom-1.5 -right-1.5 bg-[#ecab37] border-2 border-[#21242e] w-8 h-8 rounded-lg flex items-center justify-center text-base shadow-sm">
-              ⚓
+            <div className="absolute bottom-0 right-0 bg-[#3182F6] border-2 border-white w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm">
+              <Anchor className="w-3.5 h-3.5" />
             </div>
           </div>
 
-          {/* 이름 */}
-          <h1 className="text-2xl font-black tracking-tight mb-2">
-            {profile.name}
-          </h1>
+          {/* 이름 & 공식 인증 마크 */}
+          <div className="flex items-center gap-1.5 mb-2">
+            <h1 className="text-2xl font-bold text-[#191F28] tracking-tight">
+              {profile.name}
+            </h1>
+            <CheckCircle2 className="w-5 h-5 text-[#3182F6] fill-[#3182F6] stroke-white" />
+          </div>
 
           {/* 뱃지 */}
-          <div className="mb-4">
-            <span className="bg-white border border-[#21242e] px-3 py-1 text-xs font-bold text-[#21242e] shadow-xs rounded-full">
+          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4">
+            <Badge variant="secondary" className="px-3 py-1 text-xs font-semibold rounded-full bg-[#E8F3FF] text-[#3182F6]">
               {profile.badge}
-            </span>
+            </Badge>
           </div>
 
           {/* 소개글 */}
-          <div
-            className={`w-full p-3 rounded-xs text-xs font-bold leading-relaxed text-left ${
-              isNintendo
-                ? "bevel-inset bg-[#dedede] text-[#21242e]"
-                : isOcean
-                ? "bg-white/10 border border-white/10 text-blue-100"
-                : "bg-white border-2 border-black text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
-            }`}
-          >
+          <div className="w-full bg-[#F9FAFB] border border-[#E5E8EB] p-3.5 rounded-2xl text-sm text-[#4E5968] leading-relaxed">
             <p>{profile.bio}</p>
           </div>
-        </div>
+        </Card>
 
-        {/* 링크 바로가기 리스트 */}
-        <div className="flex flex-col gap-2.5">
+        {/* 링크 목록 섹션 */}
+        <div className="flex flex-col gap-2.5 mt-1">
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-black uppercase tracking-wider flex items-center gap-1">
-              <span className="text-[#e60012]">●</span> 링크 바로가기 ({profile.links.length})
-            </span>
-            <span className="text-[10px] font-bold opacity-75">
-              클릭 시 이동 ➔
+            <span className="text-xs font-bold text-[#8B95A1] uppercase tracking-wider">
+              링크 바로가기 ({profile.links.length})
             </span>
           </div>
 
@@ -255,137 +204,114 @@ export default function Home() {
               href={link.url}
               target={link.url.startsWith("http") ? "_blank" : undefined}
               rel="noopener noreferrer"
-              className={`p-3 rounded-xs flex items-center justify-between gap-3 transition-colors group cursor-pointer border-2 shadow-sm ${
-                isNintendo
-                  ? "bevel-plate-raised bg-[#8ba1d4] border-[#3d4f97] hover:bg-white"
-                  : isOcean
-                  ? "bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 text-white"
-                  : "bg-white border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FEF08A] text-black"
-              }`}
+              className="toss-press group flex items-center justify-between p-4 bg-white border border-[#E5E8EB] hover:border-[#3182F6]/40 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-md transition-all cursor-pointer"
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 bg-[#dedede] border-2 border-[#21242e] rounded-xs flex items-center justify-center text-xl shrink-0 group-hover:bg-[#ecab37] transition-colors text-black">
+              <div className="flex items-center gap-3.5 min-w-0">
+                {/* 이모지 아이콘 서클 */}
+                <div className="w-11 h-11 rounded-2xl bg-[#F2F4F6] group-hover:bg-[#E8F3FF] flex items-center justify-center text-xl shrink-0 transition-colors">
                   {link.emoji}
                 </div>
+                {/* 텍스트 설명 */}
                 <div className="text-left min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-black group-hover:text-[#e60012] transition-colors truncate">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-semibold text-[#191F28] group-hover:text-[#3182F6] transition-colors truncate">
                       {link.title}
                     </span>
-                    <span className={`${link.badgeBg} text-[9px] font-bold px-1.5 py-0.2 rounded-xs shrink-0`}>
-                      {link.badge}
-                    </span>
                   </div>
-                  <div className="text-[11px] font-bold opacity-70 truncate mt-0.5">
+                  <div className="text-xs text-[#8B95A1] truncate mt-0.5">
                     {link.description}
                   </div>
                 </div>
               </div>
 
-              <div className="w-6 h-6 bevel-button-orange rounded-xs flex items-center justify-center text-[10px] font-black shrink-0 group-hover:scale-110 transition-transform">
-                ▶
+              {/* 오른쪽 이동 셰브론 아이콘 */}
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#B0B8C1] group-hover:text-[#3182F6] group-hover:translate-x-0.5 transition-all shrink-0">
+                <ChevronRight className="w-5 h-5" />
               </div>
             </a>
           ))}
         </div>
 
         {/* 푸터 */}
-        <div className="carbon-halftone border-2 border-[#21242e] p-3 rounded-xs text-white flex items-center justify-between text-[10px] font-bold shadow-sm mt-2">
-          <div className="text-[#9fbee7]">
-            © 2026 {profile.name} · 마이링크 (LocalStorage Demo)
-          </div>
-          <div className="bevel-button-amber px-2 py-0.5 text-[9px] text-[#21242e]">
-            로컬 전용
-          </div>
+        <div className="text-center py-6 text-xs text-[#8B95A1]">
+          © 2026 {profile.name} · 마이링크 (Toss Design System)
         </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          시연용 프로필 편집 팝업 모달 (LocalStorage 조작)
+          시연용 프로필 편집 모달 (TDS 스타일)
       ───────────────────────────────────────────────────────────── */}
       {isEditOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-[#8ba1d4] border-4 border-[#21242e] p-5 rounded-lg max-w-md w-full shadow-2xl text-[#21242e]">
-            <div className="flex items-center justify-between border-b-2 border-[#21242e] pb-2 mb-4">
-              <h2 className="text-base font-black flex items-center gap-1.5">
-                <span>⚡ LocalStorage 데이터 실시간 편집</span>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E5E8EB] p-6 rounded-3xl max-w-sm w-full shadow-2xl text-[#191F28] animate-in fade-in-50 zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[#E5E8EB] pb-3 mb-4">
+              <h2 className="text-base font-bold text-[#191F28]">
+                프로필 정보 수정
               </h2>
               <button
                 onClick={() => setIsEditOpen(false)}
-                className="bg-[#e60012] text-white font-black px-2 py-0.5 text-xs rounded border border-black cursor-pointer"
+                className="text-[#8B95A1] hover:text-[#191F28] p-1 rounded-full hover:bg-[#F2F4F6] cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="flex flex-col gap-3 text-xs font-bold">
+            <form onSubmit={handleSaveProfile} className="flex flex-col gap-3.5 text-xs font-semibold">
               <div>
-                <label className="block mb-1 text-[11px]">이름:</label>
+                <label className="block mb-1.5 text-[#4E5968]">이름</label>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full bg-white border-2 border-[#21242e] p-2 text-xs focus:outline-none"
+                  className="w-full bg-[#F9FAFB] border border-[#E5E8EB] focus:border-[#3182F6] rounded-xl p-3 text-sm text-[#191F28] focus:outline-none transition-colors"
                   required
                 />
               </div>
 
               <div>
-                <label className="block mb-1 text-[11px]">뱃지 라벨:</label>
+                <label className="block mb-1.5 text-[#4E5968]">직업 / 뱃지 라벨</label>
                 <input
                   type="text"
                   value={editBadge}
                   onChange={(e) => setEditBadge(e.target.value)}
-                  className="w-full bg-white border-2 border-[#21242e] p-2 text-xs focus:outline-none"
+                  className="w-full bg-[#F9FAFB] border border-[#E5E8EB] focus:border-[#3182F6] rounded-xl p-3 text-sm text-[#191F28] focus:outline-none transition-colors"
                   required
                 />
               </div>
 
               <div>
-                <label className="block mb-1 text-[11px]">소개글:</label>
+                <label className="block mb-1.5 text-[#4E5968]">소개글</label>
                 <textarea
                   value={editBio}
                   onChange={(e) => setEditBio(e.target.value)}
                   rows={3}
-                  className="w-full bg-white border-2 border-[#21242e] p-2 text-xs focus:outline-none"
+                  className="w-full bg-[#F9FAFB] border border-[#E5E8EB] focus:border-[#3182F6] rounded-xl p-3 text-sm text-[#191F28] focus:outline-none transition-colors leading-relaxed"
                   required
                 />
               </div>
 
-              <div>
-                <label className="block mb-1 text-[11px]">테마 선택:</label>
-                <select
-                  value={editTheme}
-                  onChange={(e) => setEditTheme(e.target.value as any)}
-                  className="w-full bg-white border-2 border-[#21242e] p-2 text-xs focus:outline-none font-bold"
-                >
-                  <option value="nintendo">🎮 닌텐도 레트로 메탈 테마</option>
-                  <option value="ocean">🌊 오션 블루 글라스 테마</option>
-                  <option value="neobrutal">⚡ 네오브루탈리즘 팝 테마</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#3d4f97]">
+              <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-[#E5E8EB]">
                 <button
                   type="button"
                   onClick={handleResetData}
-                  className="bg-zinc-300 hover:bg-zinc-400 text-black px-3 py-1.5 rounded border border-black text-xs font-bold cursor-pointer"
+                  className="flex items-center gap-1 text-xs text-[#8B95A1] hover:text-[#E63946] px-2 py-2 rounded-lg cursor-pointer transition-colors"
                 >
-                  초기화
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>초기화</span>
                 </button>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setIsEditOpen(false)}
-                    className="bg-white text-black px-3 py-1.5 rounded border border-black text-xs font-bold cursor-pointer"
+                    className="bg-[#F2F4F6] hover:bg-[#E5E8EB] text-[#4E5968] px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
                   >
                     취소
                   </button>
                   <button
                     type="submit"
-                    className="bevel-button-orange px-4 py-1.5 text-xs font-black uppercase cursor-pointer"
+                    className="bg-[#3182F6] hover:bg-[#1B64DA] text-white px-5 py-2.5 rounded-xl text-xs font-semibold cursor-pointer shadow-sm transition-colors"
                   >
-                    LocalStorage에 저장 💾
+                    저장하기
                   </button>
                 </div>
               </div>
