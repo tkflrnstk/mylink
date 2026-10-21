@@ -85,20 +85,68 @@ const MOCK_LINKS = [
   },
 ];
 
+import { addLinkToFirestore, getFirestoreLinks } from "@/lib/links";
+
 // GET /api/links
 export async function GET() {
-  // 더미 데이터는 PRD(production) 환경에서만 사용
-  if (process.env.NODE_ENV !== "production") {
+  try {
+    const links = await getFirestoreLinks();
+    if (links.length > 0) {
+      return NextResponse.json({
+        success: true,
+        data: links,
+        total: links.length,
+      });
+    }
+
+    // 더미 데이터 폴백
+    return NextResponse.json({
+      success: true,
+      data: MOCK_LINKS,
+      total: MOCK_LINKS.length,
+    });
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, message: "Mock 데이터는 PRD 환경에서만 제공됩니다." },
-      { status: 404 }
+      { success: false, message: error?.message || "링크 조회 실패" },
+      { status: 500 }
     );
   }
-
-  // 실제 서비스 시: await db.links.findMany() 등으로 교체
-  return NextResponse.json({
-    success: true,
-    data: MOCK_LINKS,
-    total: MOCK_LINKS.length,
-  });
 }
+
+// POST /api/links
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { title, url, subtitle, description, emoji, badge, badgeBg } = body;
+
+    if (!title || !url) {
+      return NextResponse.json(
+        { success: false, message: "title과 url은 필수 항목입니다." },
+        { status: 400 }
+      );
+    }
+
+    const docId = await addLinkToFirestore({
+      title,
+      url,
+      subtitle,
+      description,
+      emoji,
+      badge,
+      badgeBg,
+    });
+
+    return NextResponse.json({
+      success: true,
+      id: docId,
+      message: "링크가 Firestore(users/anonymous/links)에 성공적으로 저장되었습니다.",
+    });
+  } catch (error: any) {
+    console.error("POST /api/links error:", error);
+    return NextResponse.json(
+      { success: false, message: error?.message || "링크 생성 중 오류가 발생했습니다." },
+      { status: 500 }
+    );
+  }
+}
+

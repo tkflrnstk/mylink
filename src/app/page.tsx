@@ -8,6 +8,14 @@ import { AddLinkDialog } from "@/components/links/add-link-dialog";
 import linksData from "@/data/links.json";
 import type { LinkItem } from "@/types/link";
 
+import {
+  addLinkToFirestore,
+  updateLinkInFirestore,
+  deleteLinkFromFirestore,
+  subscribeFirestoreLinks,
+  migrateLocalLinksToFirestore,
+} from "@/lib/links";
+
 /* ── 타입 ─────────────────────────────────────────────── */
 interface ProfileData {
   name: string;
@@ -31,6 +39,7 @@ export default function Home() {
   const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
   const [links, setLinks] = useState<LinkItem[]>(DEFAULT_LINKS);
   const [isMounted, setIsMounted] = useState(false);
+  const [isFirestoreConnected, setIsFirestoreConnected] = useState(false);
 
   // 모달 상태
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -44,6 +53,8 @@ export default function Home() {
 
   useEffect(() => {
     setIsMounted(true);
+    let initialLinksToSync = DEFAULT_LINKS;
+
     try {
       // 프로필 로드
       const savedProfile = localStorage.getItem(LOCAL_STORAGE_PROFILE_KEY);
@@ -53,16 +64,43 @@ export default function Home() {
         localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(DEFAULT_PROFILE));
       }
 
-      // 링크 목록 로드
+      // 로컬 스토리지에 보관된 링크가 있으면 병합 후보로 사용
       const savedLinks = localStorage.getItem(LOCAL_STORAGE_LINKS_KEY);
       if (savedLinks) {
-        setLinks(JSON.parse(savedLinks));
-      } else {
-        localStorage.setItem(LOCAL_STORAGE_LINKS_KEY, JSON.stringify(DEFAULT_LINKS));
+        const parsed = JSON.parse(savedLinks);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          initialLinksToSync = parsed;
+        }
       }
     } catch (e) {
       console.error("LocalStorage load error:", e);
     }
+
+    // 기존 링크 모음을 Firestore로 1회 안전하게 마이그레이션 (중복 방지)
+    migrateLocalLinksToFirestore(initialLinksToSync);
+
+    // Firestore 실시간 구독 (users/anonymous/links)
+    const unsubscribe = subscribeFirestoreLinks(
+      (firestoreLinks) => {
+        setIsFirestoreConnected(true);
+
+        if (firestoreLinks.length === 0) {
+          // Firestore 컬렉션이 완전히 비어있을 때만 기본 데이터 1회 시딩
+          migrateLocalLinksToFirestore(DEFAULT_LINKS);
+          setLinks(DEFAULT_LINKS);
+        } else {
+          // Firestore의 실제 데이터와 화면을 1:1 완전 동기화 (콘솔에서 삭제 시 화면도 즉시 삭제)
+          setLinks(firestoreLinks);
+        }
+      },
+      (error) => {
+        console.error("Firestore 실시간 연동 에러:", error);
+        setIsFirestoreConnected(false);
+        setLinks(initialLinksToSync);
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
   const handleOpenEditProfile = () => {
@@ -85,11 +123,9 @@ export default function Home() {
   };
 
   const handleResetProfile = () => {
-    if (confirm("프로필과 링크를 초기값으로 되돌릴게요.")) {
+    if (confirm("프로필을 초기값으로 되돌릴게요.")) {
       setProfile(DEFAULT_PROFILE);
-      setLinks(DEFAULT_LINKS);
       localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(DEFAULT_PROFILE));
-      localStorage.setItem(LOCAL_STORAGE_LINKS_KEY, JSON.stringify(DEFAULT_LINKS));
       setIsEditProfileOpen(false);
     }
   };
@@ -106,36 +142,57 @@ export default function Home() {
     setIsLinkDialogOpen(true);
   };
 
-  // 링크 저장 핸들러 (추가 및 수정 공통)
-  const handleSaveLink = (savedLink: LinkItem) => {
-    let updatedLinks: LinkItem[];
-    const exists = links.some((item) => item.id === savedLink.id);
-
-    if (exists) {
-      // 수정
-      updatedLinks = links.map((item) => (item.id === savedLink.id ? savedLink : item));
+  // 링크 저장 핸들러 (Firestore users/anonymous/links 연동)
+  const handleSaveLink = async (savedLink: LinkItem) => {
+    if (editingLink) {
+      // 수정: 화면 즉시 반영 + Firestore 업데이트
+      setLinks((prev) =>
+        prev.map((item) => (item.id === savedLink.id ? savedLink : item))
+      );
+      try {
+        await updateLinkInFirestore(editingLink.id, {
+          title: savedLink.title,
+          url: savedLink.url,
+          subtitle: savedLink.subtitle,
+          description: savedLink.description,
+          emoji: savedLink.emoji,
+          badge: savedLink.badge,
+          badgeBg: savedLink.badgeBg,
+        });
+      } catch (err) {
+        console.error("Firestore 링크 수정 실패:", err);
+      }
     } else {
-      // 추가
-      updatedLinks = [savedLink, ...links];
-    }
-
-    setLinks(updatedLinks);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_LINKS_KEY, JSON.stringify(updatedLinks));
-    } catch (e) {
-      console.error("LocalStorage save links error:", e);
+      // 새 링크 추가: Firestore에 저장 -> onSnapshot이 실시간으로 전체 목록(새 링크 포함) 갱신
+      try {
+        await addLinkToFirestore({
+          title: savedLink.title,
+          url: savedLink.url,
+          subtitle: savedLink.subtitle,
+          description: savedLink.description,
+          emoji: savedLink.emoji,
+          badge: savedLink.badge,
+          badgeBg: savedLink.badgeBg,
+        });
+      } catch (err) {
+        console.error("Firestore 링크 추가 실패:", err);
+        alert("링크를 저장하는 중 오류가 발생했습니다.");
+      }
     }
   };
 
-  // 링크 삭제 핸들러
-  const handleDeleteLink = (id: string) => {
+  // 링크 삭제 핸들러 (화면 + Firestore 완전 양방향 연동)
+  const handleDeleteLink = async (id: string) => {
     if (confirm("이 링크를 삭제할까요?")) {
-      const updatedLinks = links.filter((item) => item.id !== id);
-      setLinks(updatedLinks);
+      // 1. 화면 즉시 삭제 (Optimistic UI)
+      setLinks((prev) => prev.filter((item) => item.id !== id));
+
+      // 2. Firestore 문서 삭제 (Firebase 콘솔에서도 즉시 삭제됨)
       try {
-        localStorage.setItem(LOCAL_STORAGE_LINKS_KEY, JSON.stringify(updatedLinks));
-      } catch (e) {
-        console.error("LocalStorage delete link error:", e);
+        await deleteLinkFromFirestore(id);
+      } catch (err) {
+        console.error("Firestore 링크 삭제 실패:", err);
+        alert("링크 삭제에 실패했습니다.");
       }
     }
   };
@@ -151,8 +208,10 @@ export default function Home() {
                       bg-tds-grey-900 text-white px-3.5 sm:px-4 py-2.5 rounded-tds-xl
                       text-[13px] leading-[1.25] min-w-0">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-          <span className="font-semibold truncate">💾 LocalStorage 시연 중</span>
+          <span className={`w-2 h-2 rounded-full ${isFirestoreConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"} shrink-0`} />
+          <span className="font-semibold truncate">
+            {isFirestoreConnected ? "🔥 Firestore (users/anonymous/links) 연동 중" : "💾 LocalStorage 모드"}
+          </span>
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-auto">
           {/* 단 하나의 ➕ 링크 추가 버튼 유지 */}

@@ -39,7 +39,7 @@ type LinkFormValues = z.infer<typeof linkFormSchema>;
 interface AddLinkDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveLink: (link: LinkItem) => void;
+  onSaveLink: (link: LinkItem) => Promise<void> | void;
   editingLink?: LinkItem | null;
 }
 
@@ -50,6 +50,8 @@ const PRESET_BADGES = ["코드", "기록", "문의", "경력", "포폴", "영상
  * TDS Add/Edit Link Dialog — react-hook-form + zod 기반 실시간 검증 다이얼로그
  */
 export function AddLinkDialog({ isOpen, onClose, onSaveLink, editingLink }: AddLinkDialogProps) {
+  const [isSaving, setIsSaving] = React.useState(false);
+
   const {
     register,
     handleSubmit,
@@ -98,7 +100,7 @@ export function AddLinkDialog({ isOpen, onClose, onSaveLink, editingLink }: AddL
 
   if (!isOpen) return null;
 
-  const onSubmit = (data: LinkFormValues) => {
+  const onSubmit = async (data: LinkFormValues) => {
     let formattedUrl = data.url.trim();
     if (
       !formattedUrl.startsWith("http://") &&
@@ -120,8 +122,16 @@ export function AddLinkDialog({ isOpen, onClose, onSaveLink, editingLink }: AddL
       badgeBg: editingLink?.badgeBg || "bg-tds-bg-brand-weak text-tds-text-brand",
     };
 
-    onSaveLink(savedLink);
-    onClose();
+    try {
+      setIsSaving(true);
+      await onSaveLink(savedLink);
+      onClose();
+    } catch (err) {
+      console.error("링크 저장 중 오류:", err);
+      alert("링크를 저장하는 중 문제가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const isEditMode = Boolean(editingLink);
@@ -338,8 +348,9 @@ export function AddLinkDialog({ isOpen, onClose, onSaveLink, editingLink }: AddL
             <button
               type="button"
               onClick={onClose}
+              disabled={isSaving}
               className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-tds-m bg-tds-fill-secondary
-                         hover:bg-tds-grey-200 text-tds-text-primary
+                         hover:bg-tds-grey-200 text-tds-text-primary disabled:opacity-50
                          text-[13px] sm:text-[15px] font-semibold leading-[1.25] tracking-[-0.005em]
                          transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
                          active:scale-[0.98] cursor-pointer shrink-0"
@@ -348,13 +359,23 @@ export function AddLinkDialog({ isOpen, onClose, onSaveLink, editingLink }: AddL
             </button>
             <button
               type="submit"
+              disabled={isSaving}
               className="h-9 sm:h-10 px-4 sm:px-5 rounded-tds-m bg-tds-fill-brand
-                         hover:bg-tds-blue-600 text-white
+                         hover:bg-tds-blue-600 text-white disabled:opacity-50
                          text-[13px] sm:text-[15px] font-semibold leading-[1.25] tracking-[-0.005em]
                          transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
-                         active:scale-[0.98] cursor-pointer shrink-0"
+                         active:scale-[0.98] cursor-pointer shrink-0 flex items-center gap-1.5"
             >
-              {isEditMode ? "저장 💾" : "링크 추가"}
+              {isSaving ? (
+                <>
+                  <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>저장 중...</span>
+                </>
+              ) : isEditMode ? (
+                "저장 💾"
+              ) : (
+                "링크 추가"
+              )}
             </button>
           </div>
 
