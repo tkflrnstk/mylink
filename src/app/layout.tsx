@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/components/providers";
+import { Header } from "@/components/layout/header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "노기훈 | 마이링크 (정부 항해사 & 개발자)",
-  description: "정부 항해사이자 바이브 코딩 개발자 노기훈의 레트로 메탈 프로필 마이링크 페이지입니다.",
+  title: "마이링크 (MyLink) | 나만의 맞춤 링크 관리",
+  description: "Google 계정으로 로그인하여 나만의 맞춤 링크를 생성하고 실시간으로 관리할 수 있는 MyLink 서비스입니다.",
 };
 
 export default function RootLayout({
@@ -24,7 +26,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-tds-fill-weak text-tds-text-primary">
+        <Providers>
+          <Header />
+          <main className="flex-1 flex flex-col w-full">{children}</main>
+        </Providers>
+      </body>
     </html>
   );
 }

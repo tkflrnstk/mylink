@@ -13,24 +13,40 @@ import {
 import { db } from "@/lib/firebase";
 import type { LinkItem, CreateLinkInput } from "@/types/link";
 
-// Firestore 링크 컬렉션 경로: users/anonymous/links
-export const LINKS_COLLECTION_PATH = "users/anonymous/links";
-
 /**
- * Firestore users/anonymous/links 컬렉션 레퍼런스 반환
+ * Firestore users/{userId}/links 컬렉션 경로 반환
  */
-export const getLinksCollectionRef = () => {
-  return collection(db, "users", "anonymous", "links");
+export const getLinksCollectionPath = (userId: string = "anonymous") => {
+  return `users/${userId}/links`;
 };
 
 /**
- * 새 링크를 Firestore users/anonymous/links 컬렉션에 추가
- * 필드: title, url, createdat, updatedat, (serverTimestamp)
+ * Firestore users/{userId}/links 컬렉션 레퍼런스 반환
+ */
+export const getLinksCollectionRef = (userId: string = "anonymous") => {
+  return collection(db, "users", userId, "links");
+};
+
+/**
+ * 새 링크를 Firestore users/{userId}/links 컬렉션에 추가
+ * - 1개 인자 전달 시: addLinkToFirestore(input) -> userId="anonymous" 기본 적용
+ * - 2개 인자 전달 시: addLinkToFirestore(userId, input) -> 지정된 user.uid 경로에 저장
  */
 export async function addLinkToFirestore(
-  input: CreateLinkInput
+  userIdOrInput: string | CreateLinkInput,
+  maybeInput?: CreateLinkInput
 ): Promise<string> {
-  const linksColRef = getLinksCollectionRef();
+  let userId = "anonymous";
+  let input: CreateLinkInput;
+
+  if (typeof userIdOrInput === "string") {
+    userId = userIdOrInput;
+    input = maybeInput!;
+  } else {
+    input = userIdOrInput;
+  }
+
+  const linksColRef = getLinksCollectionRef(userId);
 
   const docRef = await addDoc(linksColRef, {
     title: input.title,
@@ -48,18 +64,19 @@ export async function addLinkToFirestore(
 }
 
 /**
- * 기존 기본 링크들을 Firestore로 최초 1회 안전하게 마이그레이션(시딩)
+ * 기본 링크들을 Firestore users/{userId}/links로 최초 1회 안전하게 마이그레이션(시딩)
  */
 export async function migrateLocalLinksToFirestore(
+  userId: string,
   linksToMigrate: LinkItem[]
 ): Promise<number> {
-  if (!linksToMigrate || linksToMigrate.length === 0) return 0;
+  if (!userId || !linksToMigrate || linksToMigrate.length === 0) return 0;
 
   try {
-    const linksColRef = getLinksCollectionRef();
+    const linksColRef = getLinksCollectionRef(userId);
     const snapshot = await getDocs(linksColRef);
     if (!snapshot.empty) {
-      // 이미 Firestore에 데이터가 있으면 마이그레이션 불필요
+      // 이미 사용자의 링크 컬렉션에 데이터가 있으면 마이그레이션 불필요
       return 0;
     }
 
@@ -68,7 +85,7 @@ export async function migrateLocalLinksToFirestore(
 
     for (let i = 0; i < linksToMigrate.length; i++) {
       const item = linksToMigrate[i];
-      const docRef = doc(db, "users", "anonymous", "links", item.id);
+      const docRef = doc(db, "users", userId, "links", item.id);
       batch.set(docRef, {
         title: item.title,
         url: item.url,
@@ -86,7 +103,7 @@ export async function migrateLocalLinksToFirestore(
 
     if (count > 0) {
       await batch.commit();
-      console.log(`기본 링크 ${count}개가 Firestore(users/anonymous/links)로 시딩되었습니다.`);
+      console.log(`기본 링크 ${count}개가 Firestore(users/${userId}/links)로 시딩되었습니다.`);
     }
 
     return count;
@@ -97,13 +114,14 @@ export async function migrateLocalLinksToFirestore(
 }
 
 /**
- * Firestore의 링크 정보 업데이트
+ * Firestore users/{userId}/links 문서 업데이트
  */
 export async function updateLinkInFirestore(
+  userId: string,
   id: string,
   input: Partial<CreateLinkInput>
 ): Promise<void> {
-  const docRef = doc(db, "users", "anonymous", "links", id);
+  const docRef = doc(db, "users", userId, "links", id);
 
   await updateDoc(docRef, {
     ...input,
@@ -112,19 +130,22 @@ export async function updateLinkInFirestore(
 }
 
 /**
- * Firestore에서 링크 문서 완전 삭제
+ * Firestore users/{userId}/links에서 링크 문서 완전 삭제
  */
-export async function deleteLinkFromFirestore(id: string): Promise<void> {
-  const docRef = doc(db, "users", "anonymous", "links", id);
+export async function deleteLinkFromFirestore(
+  userId: string,
+  id: string
+): Promise<void> {
+  const docRef = doc(db, "users", userId, "links", id);
   await deleteDoc(docRef);
 }
 
 /**
- * Firestore 링크 목록 1회 조회
+ * Firestore users/{userId}/links 링크 목록 1회 조회
  */
-export async function getFirestoreLinks(): Promise<LinkItem[]> {
+export async function getFirestoreLinks(userId: string = "anonymous"): Promise<LinkItem[]> {
   try {
-    const linksColRef = getLinksCollectionRef();
+    const linksColRef = getLinksCollectionRef(userId);
     const snapshot = await getDocs(linksColRef);
     const items: LinkItem[] = snapshot.docs.map((d) => {
       const data = d.data();
@@ -161,22 +182,21 @@ export async function getFirestoreLinks(): Promise<LinkItem[]> {
 
     return items;
   } catch (error) {
-    console.error("getFirestoreLinks error:", error);
+    console.error(`getFirestoreLinks (users/${userId}/links) error:`, error);
     return [];
   }
 }
 
 /**
- * Firestore users/anonymous/links 실시간 구독
- * Firebase 콘솔 또는 웹 화면에서 추가/수정/삭제 시 100% 실시간 양방향 동기화
+ * Firestore users/{userId}/links 실시간 구독
  */
 export function subscribeFirestoreLinks(
+  userId: string,
   onUpdate: (links: LinkItem[]) => void,
   onError?: (error: Error) => void
 ): Unsubscribe {
-  const linksColRef = getLinksCollectionRef();
+  const linksColRef = getLinksCollectionRef(userId);
 
-  // Firestore 컬렉션 전체를 직접 실시간 리스너로 연결
   return onSnapshot(
     linksColRef,
     (snapshot) => {
@@ -197,9 +217,7 @@ export function subscribeFirestoreLinks(
         };
       });
 
-      // 정렬 규칙:
-      // 1. 신규 추가된 링크(order 없음): 생성일시(createdat) 기준 최신순 상단 배치
-      // 2. 기본 링크(order 있음): order 순서대로 아래에 배치
+      // 정렬 규칙: order가 있으면 order순, 없으면 생성시간 최신순
       items.sort((a, b) => {
         const aHasOrder = typeof (a as any).order === "number";
         const bHasOrder = typeof (b as any).order === "number";
@@ -216,11 +234,10 @@ export function subscribeFirestoreLinks(
         return (a as any).order - (b as any).order;
       });
 
-      // Firestore의 현재 실제 문서 목록을 그대로 화면에 전달
       onUpdate(items);
     },
     (error) => {
-      console.error("Firestore 실시간 구독 에러:", error);
+      console.error(`Firestore 실시간 구독 에러 (users/${userId}/links):`, error);
       if (onError) onError(error);
     }
   );
