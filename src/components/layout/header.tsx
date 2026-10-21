@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { Menu } from "@base-ui/react/menu";
+import { ChevronDown, Copy, Check, LogOut, X } from "lucide-react";
+import { toast } from "sonner";
 
 export function Header() {
   const { user, userProfile, loading, signInWithGoogle, logOut } = useAuth();
@@ -14,10 +16,9 @@ export function Header() {
       setIsActionLoading(true);
       await signInWithGoogle();
     } catch (error: any) {
-      // 팝업 닫힘 에러 등은 제외하고 알림
       if (error?.code !== "auth/popup-closed-by-user") {
         console.error("로그인 실패:", error);
-        alert("Google 로그인 중 오류가 발생했습니다. 다시 시도해주세요.");
+        toast.error("Google 로그인 중 오류가 발생했습니다.");
       }
     } finally {
       setIsActionLoading(false);
@@ -28,12 +29,75 @@ export function Header() {
     try {
       setIsActionLoading(true);
       await logOut();
+      toast.success("로그아웃되었습니다.", { duration: 1500 });
     } catch (error) {
       console.error("로그아웃 실패:", error);
-      alert("로그아웃 처리 중 오류가 발생했습니다.");
+      toast.error("로그아웃 처리 중 오류가 발생했습니다.");
     } finally {
       setIsActionLoading(false);
     }
+  };
+
+  // 현재 내 링크 주소 가져오기
+  const getMyLinkUrl = () => {
+    if (typeof window !== "undefined") {
+      return window.location.origin;
+    }
+    return "https://mylink.site";
+  };
+
+  // '내 링크 주소 복사' 클릭 시 Sonner 토스트 UI 창 (문구: "링크가 복사 되었습니다", 1.5초 후 자동 종료)
+  const handleCopyMyLinkWithSonner = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const urlToCopy = getMyLinkUrl();
+
+    // 1. 클립보드에 주소 복사
+    if (typeof window !== "undefined" && navigator?.clipboard) {
+      try {
+        await navigator.clipboard.writeText(urlToCopy);
+      } catch (err) {
+        console.error("클립보드 복사 실패:", err);
+      }
+    }
+
+    // 2. Sonner 토스트 UI 창 띄우기 (1.5초 후 자동 종료)
+    toast.custom(
+      (t) => (
+        <div className="w-[320px] sm:w-[360px] bg-white border border-tds-border-default rounded-tds-2xl p-3.5 shadow-tds-3 flex flex-col gap-2 animate-in fade-in-50 slide-in-from-top-3 duration-200">
+          {/* 상단: 체크 아이콘 & "링크가 복사 되었습니다" & 닫기 */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <Check size={14} className="stroke-[2.5]" />
+              </div>
+              <span className="text-[14px] font-bold text-tds-text-primary tracking-[-0.010em]">
+                링크가 복사 되었습니다
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => toast.dismiss(t)}
+              className="w-5 h-5 flex items-center justify-center rounded-tds-s text-tds-text-disabled hover:text-tds-text-primary transition-colors cursor-pointer"
+            >
+              <X size={13} />
+            </button>
+          </div>
+
+          {/* 주소 박스 (디자인 유지) */}
+          <div className="flex items-center p-1.5 px-2 bg-tds-fill-secondary rounded-tds-m border border-tds-border-default min-w-0">
+            <span className="text-[12px] font-mono text-tds-text-secondary truncate select-all">
+              {urlToCopy}
+            </span>
+          </div>
+        </div>
+      ),
+      {
+        duration: 1500, // 1~2초(1.5초) 후 자동 소멸
+        id: "my-link-share-toast",
+      }
+    );
   };
 
   // 표시할 사용자 이름 (이메일 앞부분 우선 사용)
@@ -57,7 +121,7 @@ export function Header() {
           </div>
         </Link>
 
-        {/* 우측: 인증 영역 */}
+        {/* 우측: 인증 및 프로필 드롭다운 영역 */}
         <div className="flex items-center gap-2 sm:gap-3">
           {loading ? (
             <div className="flex items-center gap-2 text-tds-text-disabled text-[13px] animate-pulse">
@@ -65,9 +129,14 @@ export function Header() {
               <span>확인 중...</span>
             </div>
           ) : user ? (
-            /* 로그인 상태: "홍길동님" + "로그아웃" 버튼 */
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-tds-m bg-tds-fill-secondary border border-tds-border-default/50">
+            /* 로그인 상태: Base UI Menu 드롭다운 (계정자 정보, 내 링크 주소 복사, 로그아웃) */
+            <Menu.Root>
+              <Menu.Trigger
+                disabled={isActionLoading}
+                className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-tds-m bg-tds-fill-secondary hover:bg-tds-grey-200
+                           border border-tds-border-default/60 transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
+                           cursor-pointer active:scale-[0.98] outline-none group select-none"
+              >
                 {user.photoURL ? (
                   <img
                     src={user.photoURL}
@@ -79,23 +148,78 @@ export function Header() {
                     {displayName.charAt(0)}
                   </div>
                 )}
-                <span className="text-[13px] sm:text-[14px] font-semibold text-tds-text-primary tracking-[-0.010em] max-w-[100px] sm:max-w-[150px] truncate">
+                <span className="text-[13px] sm:text-[14px] font-semibold text-tds-text-primary tracking-[-0.010em] max-w-[120px] sm:max-w-[160px] truncate">
                   {displayName}님
                 </span>
-              </div>
+                <ChevronDown size={14} className="text-tds-text-disabled group-hover:text-tds-text-secondary transition-transform duration-150 shrink-0" />
+              </Menu.Trigger>
 
-              <button
-                type="button"
-                onClick={handleSignOut}
-                disabled={isActionLoading}
-                className="h-8 sm:h-9 px-3 sm:px-3.5 rounded-tds-m bg-tds-fill-secondary hover:bg-tds-grey-200
-                           text-tds-text-secondary hover:text-tds-text-primary text-[12px] sm:text-[13px] font-semibold
-                           transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
-                           active:scale-[0.98] cursor-pointer disabled:opacity-50"
-              >
-                {isActionLoading ? "처리 중..." : "로그아웃"}
-              </button>
-            </div>
+              <Menu.Portal>
+                <Menu.Positioner side="bottom" align="end" sideOffset={8} className="z-50">
+                  <Menu.Popup className="w-64 sm:w-72 rounded-tds-xl bg-white p-1.5 shadow-tds-3 border border-tds-border-default outline-none">
+                    
+                    {/* 1. 계정자 정보 섹션 */}
+                    <div className="p-3 bg-tds-fill-secondary/60 rounded-tds-m mb-1 flex items-start gap-3 border border-tds-border-default/40">
+                      {user.photoURL ? (
+                        <img
+                          src={user.photoURL}
+                          alt={displayName}
+                          className="w-9 h-9 rounded-full object-cover shrink-0 border border-white shadow-sm mt-0.5"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-tds-bg-brand-weak text-tds-text-brand text-sm font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          {displayName.charAt(0)}
+                        </div>
+                      )}
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[14px] font-bold text-tds-text-primary truncate">
+                            {displayName}님
+                          </span>
+                        </div>
+                        {user.email && (
+                          <span className="text-[12px] text-tds-text-secondary truncate mt-0.5" title={user.email}>
+                            {user.email}
+                          </span>
+                        )}
+                        <span className="text-[10px] font-mono text-tds-text-disabled truncate mt-1">
+                          UID: {user.uid.slice(0, 10)}...
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 2. 내 링크 주소 복사 메뉴 아이템 (클릭 시 1.5초 토스트 UI 창 팝업) */}
+                    <Menu.Item
+                      onClick={handleCopyMyLinkWithSonner}
+                      className="flex items-center justify-between w-full px-3 py-2.5 rounded-tds-m text-[13px] font-semibold
+                                 text-tds-text-primary hover:bg-tds-fill-secondary transition-colors cursor-pointer outline-none select-none"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Copy size={16} className="text-tds-blue-600 shrink-0" />
+                        <span>내 링크 주소 복사</span>
+                      </div>
+                      <span className="text-[11px] text-tds-blue-600 font-normal bg-blue-50 px-1.5 py-0.5 rounded">
+                        공유
+                      </span>
+                    </Menu.Item>
+
+                    {/* 구분선 */}
+                    <div className="h-px bg-tds-border-default/60 my-1" />
+
+                    {/* 3. 로그아웃 메뉴 아이템 */}
+                    <Menu.Item
+                      onClick={handleSignOut}
+                      className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-tds-m text-[13px] font-semibold
+                                 text-red-600 hover:bg-red-50 transition-colors cursor-pointer outline-none select-none"
+                    >
+                      <LogOut size={16} className="text-red-500 shrink-0" />
+                      <span>{isActionLoading ? "로그아웃 중..." : "로그아웃"}</span>
+                    </Menu.Item>
+
+                  </Menu.Popup>
+                </Menu.Positioner>
+              </Menu.Portal>
+            </Menu.Root>
           ) : (
             /* 로그아웃 상태: "Google로 로그인" 버튼 */
             <button

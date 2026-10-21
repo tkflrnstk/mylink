@@ -188,98 +188,75 @@ export default function Home() {
   }
 
   // ────────────────────────────────────────────────────────────────
-  // 1. 로그아웃 상태 화면 (설명 문구 및 로그인 유도)
+  // 1. 로그아웃 상태 화면 (센스있고 심플한 미니멀 로그인 카드)
   // ────────────────────────────────────────────────────────────────
   if (!user) {
     return (
-      <div className="min-h-[calc(100vh-64px)] bg-tds-fill-weak py-8 sm:py-12 px-4 flex flex-col items-center w-full">
-        <div className="w-full max-w-[480px] flex flex-col gap-6">
+      <div className="min-h-[calc(100vh-64px)] bg-tds-fill-weak px-4 py-12 flex flex-col items-center justify-center w-full">
+        <div className="w-full max-w-[420px] flex flex-col items-center">
 
-          {/* 비로그인 안내 카드 */}
-          <Card className="w-full overflow-hidden border border-tds-border-default shadow-tds-1">
-            <CardContent className="flex flex-col items-center text-center p-6 sm:p-8">
-              {/* 아이콘 아바타 */}
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-tds-2xl bg-tds-bg-brand-weak flex items-center justify-center text-3xl sm:text-4xl mb-4">
-                🔒
+          {/* 비로그인 메인 카드 */}
+          <div className="w-full bg-white dark:bg-tds-fill-card rounded-tds-3xl border border-tds-border-default/80 p-8 sm:p-10 shadow-[0_12px_40px_rgba(0,0,0,0.05)] flex flex-col items-center text-center transition-all">
+            {/* 센스있는 미니멀 링크 아이콘 뱃지 */}
+            <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-tds-fill-brand flex items-center justify-center mb-6 shadow-sm ring-1 ring-blue-500/10">
+              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+            </div>
+
+            {/* 타이틀 */}
+            <h1 className="text-[24px] sm:text-[26px] font-bold text-tds-text-primary tracking-tight leading-[1.35] mb-2.5 break-keep">
+              나를 표현하는<br />
+              가장 간단한 링크
+            </h1>
+
+            {/* 서브 설명 */}
+            <p className="text-[14px] sm:text-[15px] text-tds-text-secondary leading-relaxed mb-8 break-keep">
+              흩어져 있던 SNS, 포트폴리오, 작업물을<br />
+              단 하나의 프로필 링크로 모아보세요.
+            </p>
+
+            {/* 구글 로그인 액션 버튼 */}
+            <button
+              type="button"
+              onClick={signInWithGoogle}
+              className="w-full h-12 rounded-tds-xl bg-tds-fill-brand hover:bg-tds-blue-600
+                         text-white font-semibold text-[15px] flex items-center justify-center gap-3
+                         shadow-sm hover:shadow-md transition-all duration-150 active:scale-[0.98] cursor-pointer"
+            >
+              <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center p-1 shadow-xs">
+                <svg className="w-full h-full" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
               </div>
+              <span>Google로 3초 만에 시작하기</span>
+            </button>
 
-              {/* 메인 타이틀 */}
-              <h1 className="text-xl sm:text-2xl font-bold leading-[1.30] tracking-[-0.020em] text-tds-text-primary mb-2">
-                나만의 맞춤 링크 모음
-              </h1>
+            {/* 하단 심플 가이드 */}
+            <p className="mt-4 text-[12px] sm:text-[13px] text-tds-text-disabled">
+              별도의 회원가입 없이 간편하게 시작할 수 있어요
+            </p>
+          </div>
 
-              {/* 설명 문구 */}
-              <p className="text-[14px] sm:text-[15px] leading-[1.60] text-tds-text-secondary mb-6 break-keep">
-                로그인 이후에 나만의 링크를 등록하고 관리할 수 있습니다.
-                Google 계정으로 간편하게 시작하고 클라우드에 실시간으로 보관하세요.
-              </p>
-
-              {/* 구글 로그인 액션 버튼 */}
-              <button
-                type="button"
-                onClick={signInWithGoogle}
-                className="w-full h-12 rounded-tds-l bg-tds-fill-brand hover:bg-tds-blue-600
-                           text-white font-semibold text-[15px] flex items-center justify-center gap-3
-                           shadow-sm hover:shadow-md transition-all duration-150 active:scale-[0.98] cursor-pointer"
-              >
-                <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center p-1">
-                  <svg className="w-full h-full" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                </div>
-                <span>Google 계정으로 시작하기</span>
-              </button>
-
-              <hr className="w-full border-tds-border-default my-6" />
-
-              {/* 서비스 핵심 기능 안내 포인트 */}
-              <div className="w-full flex flex-col gap-3 text-left">
-                <div className="flex items-start gap-3">
-                  <span className="text-lg">⚡</span>
-                  <div>
-                    <h3 className="text-[14px] font-semibold text-tds-text-primary">개인화된 Firestore 저장소</h3>
-                    <p className="text-[12px] text-tds-text-secondary">로그인 시 <code className="bg-tds-fill-secondary px-1 py-0.5 rounded text-[11px]">users/{`{user.uid}`}/links</code>에 독립적으로 안전하게 저장됩니다.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <span className="text-lg">🔄</span>
-                  <div>
-                    <h3 className="text-[14px] font-semibold text-tds-text-primary">실시간 양방향 동기화</h3>
-                    <p className="text-[12px] text-tds-text-secondary">어느 기기에서든 링크를 추가하고 수정하면 화면에 즉시 실시간 반영됩니다.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <span className="text-lg">🎨</span>
-                  <div>
-                    <h3 className="text-[14px] font-semibold text-tds-text-primary">자유로운 링크 및 프로필 편집</h3>
-                    <p className="text-[12px] text-tds-text-secondary">이모지, 카테고리 뱃지, 설명글 등을 손쉽게 커스텀할 수 있습니다.</p>
-                  </div>
-                </div>
-              </div>
-
-            </CardContent>
-          </Card>
-
-          {/* 하단 푸터 */}
-          <footer className="text-center text-[12px] text-tds-text-disabled py-2">
-            © 2026 마이링크 (MyLink) · 안전한 Firebase 인증 서비스
+          {/* 심플 카피라이트 */}
+          <footer className="mt-8 text-center text-[12px] text-tds-text-disabled">
+            © 2026 MyLink · All rights reserved.
           </footer>
 
         </div>
