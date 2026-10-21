@@ -12,6 +12,8 @@ interface LinkListProps {
   onUpdate?: (id: string, updatedData: Partial<CreateLinkInput>) => Promise<void> | void;
   /** 링크 삭제 핸들러 (삭제 모달 트리거) */
   onDelete?: (link: LinkItem) => void;
+  /** 읽기 전용 모드 */
+  readOnly?: boolean;
 }
 
 /**
@@ -20,7 +22,7 @@ interface LinkListProps {
  * - 시맨틱 `<ul>/<li>` 마크업을 사용합니다.
  * - links 배열이 비어 있으면 빈 상태 메시지를 표시합니다.
  */
-export function LinkList({ links, className, cardClassName, onUpdate, onDelete }: LinkListProps) {
+export function LinkList({ links, className, cardClassName, onUpdate, onDelete, readOnly = false }: LinkListProps) {
   if (links.length === 0) {
     return (
       <div className="text-center py-10 px-4 bg-white rounded-tds-xl border border-tds-border-default">
@@ -28,7 +30,7 @@ export function LinkList({ links, className, cardClassName, onUpdate, onDelete }
           등록된 링크가 없어요.
         </p>
         <p className="text-xs text-tds-text-disabled mt-1">
-          상단의 `+ 새 링크 추가` 버튼을 눌러 첫 번째 링크를 등록해보세요!
+          {readOnly ? "공개된 링크가 아직 없습니다." : "상단의 `+ 새 링크 추가` 버튼을 눌러 첫 번째 링크를 등록해보세요!"}
         </p>
       </div>
     );
@@ -43,6 +45,7 @@ export function LinkList({ links, className, cardClassName, onUpdate, onDelete }
             className={cardClassName}
             onUpdate={onUpdate}
             onDelete={onDelete}
+            readOnly={readOnly}
           />
         </li>
       ))}

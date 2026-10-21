@@ -2,110 +2,176 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { LinkAvatar } from "@/components/ui/link-avatar";
+import { Pencil } from "lucide-react";
 import { LinkList } from "@/components/links/link-list";
 import { AddLinkDialog } from "@/components/links/add-link-dialog";
 import { DeleteConfirmDialog } from "@/components/links/delete-confirm-dialog";
 import linksData from "@/data/links.json";
 import type { LinkItem, CreateLinkInput } from "@/types/link";
 import { useAuth } from "@/context/AuthContext";
-import { Dialog } from "@base-ui/react/dialog";
-
+import { toast } from "sonner";
+import { checkDisplayNameAvailable } from "@/lib/auth";
+import { getLinksCollectionPath } from "@/lib/links";
 import {
-  addLinkToFirestore,
-  updateLinkInFirestore,
-  deleteLinkFromFirestore,
-  subscribeFirestoreLinks,
-  migrateLocalLinksToFirestore,
-  getLinksCollectionPath,
-} from "@/lib/links";
+  useLinksQuery,
+  useAddLinkMutation,
+  useUpdateLinkMutation,
+  useDeleteLinkMutation,
+} from "@/hooks/use-links";
+import {
+  useUserProfileQuery,
+  useUpdateUserProfileMutation,
+  useCheckDisplayNameMutation,
+} from "@/hooks/use-user-profile";
 
 const DEFAULT_LINKS = linksData as LinkItem[];
 
 export default function Home() {
   const { user, userProfile, loading: authLoading, signInWithGoogle, updateProfile } = useAuth();
 
-  const [links, setLinks] = useState<LinkItem[]>([]);
   const [isMounted, setIsMounted] = useState(false);
-  const [isFirestoreConnected, setIsFirestoreConnected] = useState(false);
-  const [isLoadingLinks, setIsLoadingLinks] = useState(false);
 
-  // 모달 상태
-  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  // TanStack Query 훅 연동 (링크 목록 조회/뮤테이션 및 프로필 쿼리/낙관적 뮤테이션)
+  const {
+    data: links = [],
+    isLoading: isLoadingLinks,
+    isSuccess: isFirestoreConnected,
+  } = useLinksQuery(user?.uid);
+  const { data: profileQueryData } = useUserProfileQuery(user?.uid);
+  const addLinkMutation = useAddLinkMutation(user?.uid);
+  const updateLinkMutation = useUpdateLinkMutation(user?.uid);
+  const deleteLinkMutation = useDeleteLinkMutation(user?.uid);
+  const updateUserProfileMutation = useUpdateUserProfileMutation(user?.uid);
+  const checkDisplayNameMutation = useCheckDisplayNameMutation(user?.uid);
+
+  // 모달 상태 (링크 추가 및 삭제만 유지, 프로필 편집은 인라인으로 전환)
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteTargetLink, setDeleteTargetLink] = useState<LinkItem | null>(null);
 
-  // 프로필 편집 폼 상태
-  const [editName, setEditName] = useState("");
-  const [editBadge, setEditBadge] = useState("");
-  const [editBio, setEditBio] = useState("");
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  // 인라인 편집 활성 필드: 'userName' | 'displayName' | 'bio' | null
+  const [editingField, setEditingField] = useState<"userName" | "displayName" | "bio" | null>(null);
+
+  // 인라인 입력 임시 값들
+  const [inlineUserName, setInlineUserName] = useState("");
+  const [inlineDisplayName, setInlineDisplayName] = useState("");
+  const [inlineBio, setInlineBio] = useState("");
+
+  // Display Name 중복 에러 상태
+  const [displayNameError, setDisplayNameError] = useState<string | null>(null);
+
+  // 개별 필드 업데이트 진행 중 여부 및 중복 실행 방지 Ref
+  const [isUpdatingField, setIsUpdatingField] = useState(false);
+  const isSavingRef = React.useRef(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // 로그인 상태 및 user.uid에 따라 Firestore users/{user.uid}/links 실시간 구독
-  useEffect(() => {
-    if (!user) {
-      setLinks([]);
-      setIsFirestoreConnected(false);
+  // ── 1. User Name 인라인 편집 (클릭 시 입력창 -> Enter 누르면 즉시 저장) ──
+  const handleStartEditUserName = () => {
+    const currentUName = userProfile?.userName || user?.displayName || "홍길동";
+    setInlineUserName(currentUName);
+    setEditingField("userName");
+  };
+
+  const handleSaveUserName = async () => {
+    if (!user || isSavingRef.current) return;
+    const trimmed = inlineUserName.trim();
+    const currentUName = (userProfile?.userName || user?.displayName || "홍길동").trim();
+
+    if (!trimmed || trimmed === currentUName) {
+      setEditingField(null);
       return;
     }
 
-    setIsLoadingLinks(true);
-    const userId = user.uid;
-
-    // Firestore 실시간 구독 (users/{userId}/links)
-    const unsubscribe = subscribeFirestoreLinks(
-      userId,
-      (firestoreLinks) => {
-        setIsFirestoreConnected(true);
-        setIsLoadingLinks(false);
-        // 개별 사용자는 처음에는 빈 링크 목록으로 시작 (자동 생성 방지)
-        setLinks(firestoreLinks);
-      },
-      (error) => {
-        console.error("Firestore 실시간 연동 에러:", error);
-        setIsFirestoreConnected(false);
-        setIsLoadingLinks(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user]);
-
-  // 프로필 편집 모달 열기
-  const handleOpenEditProfile = () => {
-    const currentName = user?.email ? user.email.split("@")[0] : (userProfile?.displayName || user?.displayName || "");
-    const currentBadge = userProfile?.badge || "✨ 마이링크 회원";
-    const currentBio = userProfile?.bio || "반갑습니다! 나만의 링크를 실시간으로 관리하는 페이지입니다.";
-
-    setEditName(currentName);
-    setEditBadge(currentBadge);
-    setEditBio(currentBio);
-    setIsEditProfileOpen(true);
+    try {
+      isSavingRef.current = true;
+      setIsUpdatingField(true);
+      setEditingField(null); // 즉각적인 UI 반영을 위해 인라인 편집창 바로 닫기 (낙관적 캐시가 화면 채움)
+      await updateUserProfileMutation.mutateAsync({ userName: trimmed });
+      await updateProfile({ userName: trimmed });
+    } catch (err) {
+      console.error("User Name 저장 실패:", err);
+    } finally {
+      setIsUpdatingField(false);
+      isSavingRef.current = false;
+    }
   };
 
-  // 프로필 저장 (Firestore users/{uid} 문서에 저장)
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
+  // ── 2. Display Name 인라인 편집 (클릭 시 입력창 -> Enter 누르면 중복 확인 후 즉시 저장) ──
+  const handleStartEditDisplayName = () => {
+    const currentName = userProfile?.displayName || (user?.email ? user.email.split("@")[0] : (user?.displayName || ""));
+    setInlineDisplayName(currentName);
+    setDisplayNameError(null);
+    setEditingField("displayName");
+  };
+
+  const handleSaveDisplayName = async () => {
+    if (!user || isSavingRef.current) return;
+    const trimmed = inlineDisplayName.trim();
+    const currentName = (userProfile?.displayName || (user?.email ? user.email.split("@")[0] : "")).trim();
+
+    if (!trimmed || trimmed === currentName) {
+      setEditingField(null);
+      return;
+    }
 
     try {
-      setIsSavingProfile(true);
-      await updateProfile({
-        displayName: editName,
-        badge: editBadge,
-        bio: editBio,
-      });
-      setIsEditProfileOpen(false);
-    } catch (e) {
-      console.error("프로필 저장 에러:", e);
-      alert("프로필 저장 중 오류가 발생했습니다.");
+      isSavingRef.current = true;
+      setIsUpdatingField(true);
+      setDisplayNameError(null);
+
+      // Enter 입력 시 자동 중복 확인
+      const checkRes = await checkDisplayNameMutation.mutateAsync(trimmed);
+      if (!checkRes.available) {
+        setDisplayNameError(checkRes.message || "이미 사용 중인 이름입니다.");
+        setIsUpdatingField(false);
+        isSavingRef.current = false;
+        return;
+      }
+
+      setEditingField(null); // 중복 통과 시 즉시 편집창 닫고 화면 갱신
+      await updateUserProfileMutation.mutateAsync({ displayName: trimmed });
+      await updateProfile({ displayName: trimmed });
+    } catch (err) {
+      console.error("Display Name 저장 실패:", err);
+      setDisplayNameError("중복 확인 또는 저장 중 오류가 발생했습니다.");
     } finally {
-      setIsSavingProfile(false);
+      setIsUpdatingField(false);
+      isSavingRef.current = false;
+    }
+  };
+
+  // ── 3. 자기소개 인라인 편집 (클릭 시 입력창 -> Enter 누르면 즉시 저장) ──
+  const handleStartEditBio = () => {
+    const currentB = userProfile?.bio || "반갑습니다! 나만의 링크를 실시간으로 관리하는 페이지입니다.";
+    setInlineBio(currentB);
+    setEditingField("bio");
+  };
+
+  const handleSaveBio = async () => {
+    if (!user || isSavingRef.current) return;
+    const trimmed = inlineBio.trim();
+    const currentB = (userProfile?.bio || "반갑습니다! 나만의 링크를 실시간으로 관리하는 페이지입니다.").trim();
+
+    if (trimmed === currentB) {
+      setEditingField(null);
+      return;
+    }
+
+    try {
+      isSavingRef.current = true;
+      setIsUpdatingField(true);
+      setEditingField(null);
+      await updateUserProfileMutation.mutateAsync({ bio: trimmed });
+      await updateProfile({ bio: trimmed });
+    } catch (err) {
+      console.error("소개글 저장 실패:", err);
+    } finally {
+      setIsUpdatingField(false);
+      isSavingRef.current = false;
     }
   };
 
@@ -114,32 +180,23 @@ export default function Home() {
     setIsLinkDialogOpen(true);
   };
 
-  // 링크 인라인 수정 핸들러 (Firestore users/{user.uid}/links 연동)
+  // 링크 인라인 수정 핸들러 (TanStack Query useUpdateLinkMutation - 낙관적 업데이트)
   const handleUpdateLink = async (id: string, updatedData: Partial<CreateLinkInput>) => {
     if (!user) return;
-    const now = new Date();
-
-    // 1. 화면 즉시 반영 (Optimistic UI)
-    setLinks((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, ...updatedData, updatedat: now, updatedAt: now } : item
-      )
-    );
-
-    // 2. Firestore 업데이트
     try {
-      await updateLinkInFirestore(user.uid, id, updatedData);
+      await updateLinkMutation.mutateAsync({ id, data: updatedData });
     } catch (err) {
-      console.error("Firestore 링크 수정 실패:", err);
+      console.error("링크 수정 실패:", err);
+      toast.error("링크를 수정하는 중 오류가 발생했습니다.");
       throw err;
     }
   };
 
-  // 링크 저장 핸들러 (AddLinkDialog 모달용)
+  // 링크 저장 핸들러 (TanStack Query useAddLinkMutation)
   const handleSaveLink = async (savedLink: LinkItem) => {
     if (!user) return;
     try {
-      await addLinkToFirestore(user.uid, {
+      await addLinkMutation.mutateAsync({
         title: savedLink.title,
         url: savedLink.url,
         subtitle: savedLink.subtitle,
@@ -148,9 +205,10 @@ export default function Home() {
         badge: savedLink.badge,
         badgeBg: savedLink.badgeBg,
       });
+      toast.success("새 링크가 등록되었습니다!");
     } catch (err) {
       console.error("Firestore 링크 추가 실패:", err);
-      alert("링크를 저장하는 중 오류가 발생했습니다.");
+      toast.error("링크를 저장하는 중 오류가 발생했습니다.");
     }
   };
 
@@ -160,17 +218,15 @@ export default function Home() {
     setIsDeleteDialogOpen(true);
   };
 
-  // 링크 삭제 확정 핸들러 (Firebase Firestore users/{user.uid}/links 연동)
+  // 링크 삭제 확정 핸들러 (TanStack Query useDeleteLinkMutation - 낙관적 업데이트)
   const handleConfirmDelete = async (id: string) => {
     if (!user) return;
-    // 1. 화면 즉시 삭제 (Optimistic UI)
-    setLinks((prev) => prev.filter((item) => item.id !== id));
-
-    // 2. Firestore 문서 삭제
     try {
-      await deleteLinkFromFirestore(user.uid, id);
+      await deleteLinkMutation.mutateAsync(id);
+      toast.success("링크가 삭제되었습니다.");
     } catch (err) {
       console.error("Firestore 링크 삭제 실패:", err);
+      toast.error("링크 삭제 중 오류가 발생했습니다.");
       throw err;
     }
   };
@@ -264,10 +320,11 @@ export default function Home() {
     );
   }
 
-  // displayName은 이메일의 앞부분을 우선 사용
-  const currentDisplayName = user.email ? user.email.split("@")[0] : (userProfile?.displayName || user.displayName || "사용자");
-  const currentBadge = userProfile?.badge || "✨ 마이링크 회원";
-  const currentBio = userProfile?.bio || "반갑습니다! 나만의 링크를 실시간으로 관리하는 페이지입니다.";
+  // 화면에 표시할 사용자 정보 (TanStack Query 캐시 우선 반영으로 낙관적 업데이트 100% 보장)
+  const activeProfile = profileQueryData || userProfile;
+  const currentDisplayName = activeProfile?.displayName || (user.email ? user.email.split("@")[0] : (user.displayName || "사용자"));
+  const currentUserName = activeProfile?.userName || user.displayName || "홍길동";
+  const currentBio = activeProfile?.bio || "반갑습니다! 나만의 링크를 실시간으로 관리하는 페이지입니다.";
   const firestorePath = getLinksCollectionPath(user.uid);
 
   return (
@@ -298,83 +355,142 @@ export default function Home() {
           >
             ➕ 링크 추가
           </button>
-          <button
-            onClick={handleOpenEditProfile}
-            className="h-8 px-3 rounded-tds-m bg-tds-grey-800 hover:bg-tds-grey-700
-                       active:scale-[0.98] text-white text-[13px] font-semibold
-                       transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
-                       cursor-pointer shrink-0"
-          >
-            ⚡ 프로필 편집
-          </button>
         </div>
       </div>
 
       {/* ── 메인 컨테이너 ── */}
       <div className="w-full max-w-[460px] flex flex-col gap-4 min-w-0">
 
-        {/* 프로필 카드 — 로그인된 유저 정보 및 Firestore 경로 명시 */}
-        <Card className="w-full min-w-0 overflow-hidden shadow-tds-1">
-          <CardContent className="flex flex-col items-center text-center gap-4 sm:gap-5 py-6 sm:py-8 px-4 sm:px-6 min-w-0">
+        {/* 프로필 카드 — [프로필 사진], [user name], [display name], [자기소개] 수직/수평 정밀 중앙 정렬 */}
+        <Card className="w-full min-w-0 overflow-hidden shadow-tds-1 border border-tds-border-default/80 bg-white">
+          <CardContent className="flex flex-col items-center justify-center text-center py-7 sm:py-9 px-6 sm:px-8 min-w-0">
 
-            {/* 아바타: 구글 프로필 사진 또는 이니셜 */}
-            {user.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt={currentDisplayName}
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-tds-xl object-cover shadow-sm border-2 border-white shrink-0"
-              />
-            ) : (
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-tds-xl bg-tds-bg-brand-weak
-                              flex items-center justify-center shrink-0">
-                <span className="text-2xl sm:text-3xl font-bold text-tds-text-brand">
-                  {currentDisplayName.charAt(0)}
-                </span>
-              </div>
-            )}
+            {/* 1. [프로필 사진] 깔끔한 "LINK" 감성의 모던 원형 아바타 */}
+            <div className="flex items-center justify-center mb-3.5">
+              <LinkAvatar size="lg" />
+            </div>
 
-            {/* 이름 */}
-            <div className="flex flex-col items-center gap-1 max-w-full">
-              <h1 className="text-xl sm:text-2xl font-bold leading-[1.30] tracking-[-0.020em]
-                             text-tds-text-primary break-words max-w-full">
-                {currentDisplayName}
-              </h1>
-              {user.email && (
-                <span className="text-[13px] text-tds-text-secondary truncate max-w-[280px]">
-                  {user.email}
-                </span>
+            {/* 2. [user name] "홍길동" (칸 클릭 시 입력창 노출 -> 엔터 누르면 즉시 저장) */}
+            <div className="flex items-center justify-center mb-1 w-full">
+              {editingField === "userName" ? (
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <input
+                    type="text"
+                    value={inlineUserName}
+                    onChange={(e) => setInlineUserName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSaveUserName();
+                      } else if (e.key === "Escape") {
+                        setEditingField(null);
+                      }
+                    }}
+                    onBlur={handleSaveUserName}
+                    placeholder="이름 입력 후 Enter"
+                    className="h-9 px-3 rounded-tds-m text-[18px] sm:text-[20px] font-bold text-tds-text-primary bg-white border-2 border-tds-border-focused focus:outline-none w-48 sm:w-56 text-center shadow-xs"
+                    autoFocus
+                  />
+                  <span className="text-[11px] text-tds-text-disabled">엔터(Enter)를 누르면 저장됩니다 · Esc 취소</span>
+                </div>
+              ) : (
+                <div
+                  onClick={handleStartEditUserName}
+                  title="클릭하여 user name 수정"
+                  className="group relative inline-flex items-center justify-center px-6 py-1 rounded-tds-m hover:bg-tds-fill-secondary/70 transition-colors cursor-pointer select-none"
+                >
+                  <h1 className="text-xl sm:text-2xl font-bold leading-[1.30] tracking-[-0.020em] text-tds-text-primary text-center">
+                    {currentUserName}
+                  </h1>
+                  <Pencil size={13} className="absolute right-1.5 opacity-0 group-hover:opacity-70 text-tds-text-secondary transition-opacity" />
+                </div>
               )}
             </div>
 
-            {/* 뱃지 */}
-            <Badge variant="chip-brand">
-              {currentBadge}
-            </Badge>
-
-            {/* 유저 Firestore 정보 박스 */}
-            <div className="w-full bg-tds-fill-secondary rounded-tds-m p-3 text-left flex flex-col gap-1 border border-tds-border-default/60">
-              <div className="flex items-center justify-between text-[11px] text-tds-text-secondary">
-                <span className="font-semibold">Firestore 유저 경로</span>
-                <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-tds-border-default text-tds-text-primary truncate max-w-[200px]">
-                  users/{user.uid}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-tds-text-secondary">
-                <span className="font-semibold">링크 컬렉션 경로</span>
-                <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-tds-border-default text-tds-blue-600 font-semibold truncate max-w-[200px]">
-                  {firestorePath}
-                </span>
-              </div>
+            {/* 3. [display name] (칸 클릭 시 입력창 노출 -> 엔터 누르면 중복 검사 후 즉시 저장) */}
+            <div className="flex items-center justify-center mb-3.5 w-full">
+              {editingField === "displayName" ? (
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <div className="flex items-center bg-white border-2 border-tds-border-focused rounded-tds-m px-3 shadow-xs">
+                    <span className="text-[14px] font-semibold text-tds-text-secondary mr-1">@</span>
+                    <input
+                      type="text"
+                      value={inlineDisplayName}
+                      onChange={(e) => {
+                        setInlineDisplayName(e.target.value);
+                        if (displayNameError) setDisplayNameError(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleSaveDisplayName();
+                        } else if (e.key === "Escape") {
+                          setEditingField(null);
+                        }
+                      }}
+                      onBlur={handleSaveDisplayName}
+                      placeholder="아이디 입력 후 Enter"
+                      className="h-8 text-[14px] font-medium text-tds-text-primary focus:outline-none w-36 sm:w-48 text-center"
+                      autoFocus
+                    />
+                  </div>
+                  {displayNameError ? (
+                    <span className="text-[11px] text-red-500 font-medium">✕ {displayNameError}</span>
+                  ) : (
+                    <span className="text-[11px] text-tds-text-disabled">엔터(Enter)를 누르면 중복 확인 후 저장됩니다 · Esc 취소</span>
+                  )}
+                </div>
+              ) : (
+                <div
+                  onClick={handleStartEditDisplayName}
+                  title="클릭하여 display name 수정"
+                  className="group relative inline-flex items-center justify-center px-5 py-0.5 rounded-full bg-tds-fill-secondary/60 hover:bg-tds-fill-secondary transition-colors cursor-pointer select-none"
+                >
+                  <span className="text-[13px] sm:text-[14px] text-tds-text-secondary font-medium text-center">
+                    @{currentDisplayName}
+                  </span>
+                  <Pencil size={11} className="absolute right-1.5 opacity-0 group-hover:opacity-70 text-tds-text-secondary transition-opacity" />
+                </div>
+              )}
             </div>
 
-            {/* 구분선 */}
-            <hr className="w-full border-tds-border-default" />
+            {/* 4. [자기소개] (칸 클릭 시 입력창 노출 -> 엔터 누르면 즉시 저장) */}
+            <div className="flex items-center justify-center w-full">
+              {editingField === "bio" ? (
+                <div className="w-full max-w-[380px] flex flex-col items-center justify-center gap-1">
+                  <input
+                    type="text"
+                    value={inlineBio}
+                    onChange={(e) => setInlineBio(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSaveBio();
+                      } else if (e.key === "Escape") {
+                        setEditingField(null);
+                      }
+                    }}
+                    onBlur={handleSaveBio}
+                    placeholder="자기소개 입력 후 Enter"
+                    className="w-full h-9 px-3 rounded-tds-m text-[13px] sm:text-[14px] text-tds-text-primary bg-white border-2 border-tds-border-focused focus:outline-none text-center shadow-xs"
+                    autoFocus
+                  />
+                  <span className="text-[11px] text-tds-text-disabled">엔터(Enter)를 누르면 저장됩니다 · Esc 취소</span>
+                </div>
+              ) : (
+                <div
+                  onClick={handleStartEditBio}
+                  title="클릭하여 자기소개 수정"
+                  className="group relative w-full max-w-[380px] flex items-center justify-center px-6 py-1.5 rounded-tds-m hover:bg-tds-fill-secondary/70 transition-colors cursor-pointer select-none"
+                >
+                  <p className="text-[13px] sm:text-[14px] leading-relaxed text-tds-text-secondary break-keep text-center">
+                    {currentBio}
+                  </p>
+                  <Pencil size={12} className="absolute right-1 top-2 opacity-0 group-hover:opacity-70 text-tds-text-secondary transition-opacity shrink-0" />
+                </div>
+              )}
+            </div>
 
-            {/* 소개글 */}
-            <p className="text-[14px] sm:text-[15px] leading-[1.50] tracking-[-0.005em]
-                          text-tds-text-secondary text-left w-full break-words min-w-0">
-              {currentBio}
-            </p>
           </CardContent>
         </Card>
 
@@ -441,124 +557,7 @@ export default function Home() {
         onConfirmDelete={handleConfirmDelete}
       />
 
-      {/* ── 프로필 편집 모달 (Base UI Dialog 기반) ── */}
-      <Dialog.Root open={isEditProfileOpen} onOpenChange={(open) => !open && !isSavingProfile && setIsEditProfileOpen(false)}>
-        <Dialog.Portal>
-          <Dialog.Backdrop className="fixed inset-0 bg-tds-overlay-scrim backdrop-blur-sm z-50 transition-opacity" />
-          <Dialog.Popup className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-white rounded-tds-2xl shadow-tds-3 p-4 sm:p-6 max-h-[90vh] overflow-y-auto min-w-0 outline-none">
-              {/* 모달 헤더 */}
-              <div className="flex items-center justify-between mb-4 sm:mb-6 min-w-0">
-                <Dialog.Title className="text-base sm:text-lg font-semibold leading-[1.45] tracking-[-0.010em] text-tds-text-primary truncate">
-                  ⚡ 프로필 편집
-                </Dialog.Title>
-                <button
-                  type="button"
-                  onClick={() => setIsEditProfileOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center rounded-tds-s
-                             text-tds-text-disabled hover:text-tds-text-primary
-                             hover:bg-tds-fill-secondary
-                             transition-colors duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
-                             cursor-pointer text-lg shrink-0"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* 폼 */}
-              <form onSubmit={handleSaveProfile} className="flex flex-col gap-3.5 sm:gap-4 min-w-0">
-                <div className="flex flex-col gap-1.5 min-w-0">
-                  <label className="text-[13px] font-semibold leading-[1.25] text-tds-text-secondary">
-                    이름
-                  </label>
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    required
-                    className="h-11 sm:h-12 w-full rounded-tds-m border border-tds-border-default
-                               bg-tds-fill-secondary px-3.5 sm:px-4
-                               text-[14px] sm:text-[15px] leading-[1.50] tracking-[-0.005em] text-tds-text-primary
-                               placeholder:text-tds-text-disabled
-                               focus:outline-none focus:bg-white
-                               focus:border-tds-border-focused focus:ring-2
-                               focus:ring-tds-border-focused/20
-                               transition-all duration-[200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] min-w-0"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5 min-w-0">
-                  <label className="text-[13px] font-semibold leading-[1.25] text-tds-text-secondary">
-                    뱃지 라벨
-                  </label>
-                  <input
-                    type="text"
-                    value={editBadge}
-                    onChange={(e) => setEditBadge(e.target.value)}
-                    required
-                    placeholder="예: 🚀 스타트업 개발자"
-                    className="h-11 sm:h-12 w-full rounded-tds-m border border-tds-border-default
-                               bg-tds-fill-secondary px-3.5 sm:px-4
-                               text-[14px] sm:text-[15px] leading-[1.50] tracking-[-0.005em] text-tds-text-primary
-                               placeholder:text-tds-text-disabled
-                               focus:outline-none focus:bg-white
-                               focus:border-tds-border-focused focus:ring-2
-                               focus:ring-tds-border-focused/20
-                               transition-all duration-[200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] min-w-0"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5 min-w-0">
-                  <label className="text-[13px] font-semibold leading-[1.25] text-tds-text-secondary">
-                    소개글
-                  </label>
-                  <textarea
-                    value={editBio}
-                    onChange={(e) => setEditBio(e.target.value)}
-                    rows={3}
-                    placeholder="나를 소개하는 한 마디를 적어보세요."
-                    className="w-full rounded-tds-m border border-tds-border-default
-                               bg-tds-fill-secondary px-3.5 sm:px-4 py-2.5 sm:py-3
-                               text-[14px] sm:text-[15px] leading-[1.50] tracking-[-0.005em] text-tds-text-primary
-                               placeholder:text-tds-text-disabled
-                               focus:outline-none focus:bg-white
-                               focus:border-tds-border-focused focus:ring-2
-                               focus:ring-tds-border-focused/20
-                               transition-all duration-[200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
-                               resize-none min-w-0"
-                  />
-                </div>
-
-                {/* 액션 버튼 */}
-                <div className="flex items-center justify-end gap-2 pt-4 border-t border-tds-border-default mt-2 min-w-0">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditProfileOpen(false)}
-                    disabled={isSavingProfile}
-                    className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-tds-m bg-tds-fill-secondary
-                               hover:bg-tds-grey-200 text-tds-text-primary
-                               text-[13px] sm:text-[15px] font-semibold leading-[1.25] tracking-[-0.005em]
-                               transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
-                               active:scale-[0.98] cursor-pointer disabled:opacity-50"
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSavingProfile}
-                    className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-tds-m bg-tds-fill-brand
-                               hover:bg-tds-blue-600 text-white
-                               text-[13px] sm:text-[15px] font-semibold leading-[1.25] tracking-[-0.005em]
-                               transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
-                               active:scale-[0.98] cursor-pointer disabled:opacity-50"
-                  >
-                    {isSavingProfile ? "저장 중..." : "저장 💾"}
-                  </button>
-                </div>
-              </form>
-            </Dialog.Popup>
-        </Dialog.Portal>
-      </Dialog.Root>
-
     </div>
   );
 }
+

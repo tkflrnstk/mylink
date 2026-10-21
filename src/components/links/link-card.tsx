@@ -24,12 +24,14 @@ interface LinkCardProps {
   onUpdate?: (id: string, updatedData: Partial<CreateLinkInput>) => Promise<void> | void;
   /** 링크 삭제 트리거 (모달 열기) */
   onDelete?: (link: LinkItem) => void;
+  /** 읽기 전용 모드 (공개 링크 뷰 등) */
+  readOnly?: boolean;
 }
 
 /**
  * TDS LinkCard — 인라인 편집 및 상시 표시 수정/삭제 버튼 지원
  */
-export function LinkCard({ link, className, onUpdate, onDelete }: LinkCardProps) {
+export function LinkCard({ link, className, onUpdate, onDelete, readOnly = false }: LinkCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -402,26 +404,27 @@ export function LinkCard({ link, className, onUpdate, onDelete }: LinkCardProps)
             </div>
           </a>
 
-          {/* 우측 액션 영역: [수정], [삭제] 버튼 '항상 표시' + 바로가기 화살표 */}
+          {/* 우측 액션 영역: 바로가기 화살표 및 편집 모드 시 [수정], [삭제] */}
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 pl-1 border-l border-tds-border-default/60">
-            {/* 항상 표시되는 수정 버튼 */}
-            <button
-              type="button"
-              onClick={handleStartEdit}
-              aria-label={`${link.title} 수정`}
-              title="링크 수정 (인라인)"
-              className="inline-flex items-center gap-1 px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-tds-m
-                         bg-tds-fill-secondary hover:bg-blue-50 text-tds-text-secondary hover:text-tds-text-brand
-                         border border-tds-border-default hover:border-tds-border-focused/40
-                         transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
-                         cursor-pointer active:scale-[0.96] text-[12px] font-semibold shrink-0"
-            >
-              <Pencil size={13} className="text-tds-text-brand" />
-              <span className="hidden xs:inline sm:inline">수정</span>
-            </button>
+            {!readOnly && onUpdate && (
+              <button
+                type="button"
+                onClick={handleStartEdit}
+                aria-label={`${link.title} 수정`}
+                title="링크 수정 (인라인)"
+                className="inline-flex items-center gap-1 px-2 py-1.5 sm:px-2.5 sm:py-1.5 rounded-tds-m
+                           bg-tds-fill-secondary hover:bg-blue-50 text-tds-text-secondary hover:text-tds-text-brand
+                           border border-tds-border-default hover:border-tds-border-focused/40
+                           transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
+                           cursor-pointer active:scale-[0.96] text-[12px] font-semibold shrink-0"
+              >
+                <Pencil size={13} className="text-tds-text-brand" />
+                <span className="hidden xs:inline sm:inline">수정</span>
+              </button>
+            )}
 
-            {/* 항상 표시되는 삭제 버튼 */}
-            {onDelete && (
+            {/* 항상 표시되는 삭제 버튼 (읽기 전용이 아닐 때) */}
+            {!readOnly && onDelete && (
               <button
                 type="button"
                 onClick={(e) => {

@@ -4,8 +4,19 @@ import {
   signOut as firebaseSignOut,
   User,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth, db, storage } from "@/lib/firebase";
 import type { UserProfile } from "@/types/user";
 
 const googleProvider = new GoogleAuthProvider();
@@ -50,14 +61,16 @@ export async function syncUserProfileToFirestore(user: User): Promise<UserProfil
   const userDocRef = doc(db, "users", user.uid);
   const snap = await getDoc(userDocRef);
 
-  if (!snap.exists()) {
-    // displayName은 이메일의 앞부분을 기본으로 사용
-    const emailPrefix = user.email ? user.email.split("@")[0] : (user.displayName || "사용자");
+  // 구글 계정 기본 정보
+  const googleUserName = user.displayName || "사용자";
+  const emailPrefix = user.email ? user.email.split("@")[0] : googleUserName;
 
+  if (!snap.exists()) {
     // 최초 가입 시 기본 프로필 데이터 생성
     const defaultData: UserProfile = {
       uid: user.uid,
-      displayName: emailPrefix,
+      displayName: emailPrefix, // 표시용 닉네임 (기본: 이메일 앞부분)
+      userName: googleUserName, // 구글 계정의 실제 성명/유저네임
       email: user.email,
       photoURL: user.photoURL,
       badge: "✨ 마이링크 회원",
@@ -68,13 +81,13 @@ export async function syncUserProfileToFirestore(user: User): Promise<UserProfil
     await setDoc(userDocRef, defaultData);
     return defaultData;
   } else {
-    // 기존 유저는 최근 로그인 시간 및 최신 구글 프로필 업데이트 (displayName은 이메일 앞부분 적용)
+    // 기존 유저는 이미 변경한 커스텀 displayName/userName/photoURL이 있으면 존중
     const existing = snap.data() as UserProfile;
-    const emailPrefix = user.email ? user.email.split("@")[0] : (existing.displayName || user.displayName || "사용자");
     const updatedData: Partial<UserProfile> = {
-      displayName: emailPrefix,
+      displayName: existing.displayName || emailPrefix,
+      userName: existing.userName || googleUserName,
       email: user.email,
-      photoURL: user.photoURL || existing.photoURL,
+      photoURL: existing.photoURL !== undefined ? existing.photoURL : user.photoURL,
       lastLoginAt: serverTimestamp(),
     };
     await setDoc(userDocRef, updatedData, { merge: true });
@@ -100,6 +113,34 @@ export async function getUserProfileFromFirestore(uid: string): Promise<UserProf
 }
 
 /**
+ * Firestore users 컬렉션에서 displayName으로 유저 프로필 조회
+ */
+export async function getUserProfileByDisplayName(displayName: string): Promise<UserProfile | null> {
+  const trimmed = displayName.trim();
+  if (!trimmed) return null;
+
+  try {
+    const usersCol = collection(db, "users");
+    const q = query(usersCol, where("displayName", "==", trimmed));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      return null;
+    }
+
+    const docSnap = snap.docs[0];
+    const data = docSnap.data() as UserProfile;
+    return {
+      ...data,
+      uid: docSnap.id,
+    };
+  } catch (error) {
+    console.error("displayName으로 유저 프로필 조회 에러:", error);
+    return null;
+  }
+}
+
+/**
  * Firestore users/{uid} 프로필 정보 업데이트
  */
 export async function updateUserProfileInFirestore(
@@ -111,4 +152,63 @@ export async function updateUserProfileInFirestore(
     ...data,
     updatedAt: serverTimestamp(),
   });
+}
+
+/**
+ * Display Name 중복 확인 함수
+ * 본인(currentUid)을 제외한 다른 사용자가 해당 displayName을 이미 사용 중인지 확인
+ */
+export async function checkDisplayNameAvailable(
+  displayName: string,
+  currentUid: string
+): Promise<{ available: boolean; message: string }> {
+  const trimmed = displayName.trim();
+  if (!trimmed) {
+    return { available: false, message: "Display Name을 입력해주세요." };
+  }
+  if (trimmed.length < 2) {
+    return { available: false, message: "Display Name은 최소 2글자 이상이어야 합니다." };
+  }
+
+  try {
+    const usersCol = collection(db, "users");
+    const q = query(usersCol, where("displayName", "==", trimmed));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      return { available: true, message: "사용 가능한 Display Name입니다." };
+    }
+
+    // 검색된 문서 중 본인이 아닌 문서가 있는지 확인
+    const otherUsers = snap.docs.filter((d) => d.id !== currentUid);
+    if (otherUsers.length === 0) {
+      return { available: true, message: "현재 회원님이 사용 중인 Display Name입니다." };
+    }
+
+    return { available: false, message: "이미 다른 회원이 사용 중인 Display Name입니다." };
+  } catch (error) {
+    console.error("Display Name 중복 확인 실패:", error);
+    return { available: false, message: "중복 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." };
+  }
+}
+
+/**
+ * 프로필 사진 업로드 (Firebase Storage 우선, 불가 시 Base64 DataURL fallback)
+ */
+export async function uploadProfileImage(file: File, uid: string): Promise<string> {
+  try {
+    const fileExt = file.name.split(".").pop() || "png";
+    const storageRef = ref(storage, `profile_images/${uid}/avatar_${Date.now()}.${fileExt}`);
+    const uploadResult = await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(uploadResult.ref);
+    return downloadURL;
+  } catch (storageError) {
+    console.warn("Firebase Storage 업로드 실패, Base64로 fallback 저장합니다:", storageError);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  }
 }

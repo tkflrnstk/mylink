@@ -2,12 +2,16 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useUserProfileQuery } from "@/hooks/use-user-profile";
 import { Menu } from "@base-ui/react/menu";
-import { ChevronDown, Copy, Check, LogOut, X } from "lucide-react";
+import { ChevronDown, Copy, Check, LogOut, X, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { LinkAvatar } from "@/components/ui/link-avatar";
 
 export function Header() {
+  const router = useRouter();
   const { user, userProfile, loading, signInWithGoogle, logOut } = useAuth();
   const [isActionLoading, setIsActionLoading] = useState(false);
 
@@ -38,12 +42,10 @@ export function Header() {
     }
   };
 
-  // 현재 내 링크 주소 가져오기
+  // 현재 내 공개 링크 주소 가져오기 (/{displayName})
   const getMyLinkUrl = () => {
-    if (typeof window !== "undefined") {
-      return window.location.origin;
-    }
-    return "https://mylink.site";
+    const base = typeof window !== "undefined" ? window.location.origin : "https://mylink.site";
+    return displayName ? `${base}/${encodeURIComponent(displayName)}` : base;
   };
 
   // '내 링크 주소 복사' 클릭 시 Sonner 토스트 UI 창 (문구: "링크가 복사 되었습니다", 1.5초 후 자동 종료)
@@ -100,8 +102,13 @@ export function Header() {
     );
   };
 
-  // 표시할 사용자 이름 (이메일 앞부분 우선 사용)
-  const displayName = user?.email?.split("@")[0] || userProfile?.displayName || user?.displayName || "사용자";
+  // TanStack Query 프로필 캐시 구독 (낙관적 업데이트 실시간 동기화)
+  const { data: profileQueryData } = useUserProfileQuery(user?.uid);
+  const activeProfile = profileQueryData || userProfile;
+
+  // 표시할 사용자 정보 (TanStack Query 최신 캐시 우선 반영)
+  const displayName = activeProfile?.displayName || user?.email?.split("@")[0] || user?.displayName || "사용자";
+  const userName = activeProfile?.userName || user?.displayName || "홍길동";
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-tds-border-default/80 bg-white/95 backdrop-blur-md">
@@ -130,96 +137,110 @@ export function Header() {
             </div>
           ) : user ? (
             /* 로그인 상태: Base UI Menu 드롭다운 (계정자 정보, 내 링크 주소 복사, 로그아웃) */
-            <Menu.Root>
-              <Menu.Trigger
-                disabled={isActionLoading}
-                className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-tds-m bg-tds-fill-secondary hover:bg-tds-grey-200
-                           border border-tds-border-default/60 transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
-                           cursor-pointer active:scale-[0.98] outline-none group select-none"
+            <>
+              {/* 헤더 상단 내 공개 페이지 바로가기 버튼 */}
+              <Link
+                href={`/${encodeURIComponent(displayName)}`}
+                className="hidden xs:inline-flex sm:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-tds-m bg-white hover:bg-tds-fill-secondary
+                           border border-tds-border-default/80 text-tds-text-primary text-[12px] sm:text-[13px] font-semibold
+                           transition-all duration-[120ms] shadow-2xs hover:border-tds-border-focused/40 active:scale-[0.98] select-none"
+                title="내 공개 페이지 바로가기"
               >
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={displayName}
-                    className="w-6 h-6 rounded-full object-cover shrink-0 border border-white"
-                  />
-                ) : (
-                  <div className="w-6 h-6 rounded-full bg-tds-bg-brand-weak text-tds-text-brand text-[12px] font-bold flex items-center justify-center shrink-0">
-                    {displayName.charAt(0)}
-                  </div>
-                )}
-                <span className="text-[13px] sm:text-[14px] font-semibold text-tds-text-primary tracking-[-0.010em] max-w-[120px] sm:max-w-[160px] truncate">
-                  {displayName}님
-                </span>
-                <ChevronDown size={14} className="text-tds-text-disabled group-hover:text-tds-text-secondary transition-transform duration-150 shrink-0" />
-              </Menu.Trigger>
+                <span>내 페이지</span>
+                <ExternalLink size={12} className="text-tds-text-secondary" />
+              </Link>
 
-              <Menu.Portal>
-                <Menu.Positioner side="bottom" align="end" sideOffset={8} className="z-50">
-                  <Menu.Popup className="w-64 sm:w-72 rounded-tds-xl bg-white p-1.5 shadow-tds-3 border border-tds-border-default outline-none">
-                    
-                    {/* 1. 계정자 정보 섹션 */}
-                    <div className="p-3 bg-tds-fill-secondary/60 rounded-tds-m mb-1 flex items-start gap-3 border border-tds-border-default/40">
-                      {user.photoURL ? (
-                        <img
-                          src={user.photoURL}
-                          alt={displayName}
-                          className="w-9 h-9 rounded-full object-cover shrink-0 border border-white shadow-sm mt-0.5"
-                        />
-                      ) : (
-                        <div className="w-9 h-9 rounded-full bg-tds-bg-brand-weak text-tds-text-brand text-sm font-bold flex items-center justify-center shrink-0 mt-0.5">
-                          {displayName.charAt(0)}
-                        </div>
-                      )}
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[14px] font-bold text-tds-text-primary truncate">
-                            {displayName}님
+              <Menu.Root>
+                <Menu.Trigger
+                  disabled={isActionLoading}
+                  className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-tds-m bg-tds-fill-secondary hover:bg-tds-grey-200
+                             border border-tds-border-default/60 transition-all duration-[120ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]
+                             cursor-pointer active:scale-[0.98] outline-none group select-none"
+                >
+                  <LinkAvatar size="sm" />
+                  <span className="text-[13px] sm:text-[14px] font-semibold text-tds-text-primary tracking-[-0.010em] max-w-[120px] sm:max-w-[160px] truncate">
+                    {displayName}님
+                  </span>
+                  <ChevronDown size={14} className="text-tds-text-disabled group-hover:text-tds-text-secondary transition-transform duration-150 shrink-0" />
+                </Menu.Trigger>
+
+                <Menu.Portal>
+                  <Menu.Positioner side="bottom" align="end" sideOffset={8} className="z-50">
+                    <Menu.Popup className="w-64 sm:w-72 rounded-tds-xl bg-white p-1.5 shadow-tds-3 border border-tds-border-default outline-none">
+                      
+                      {/* 1. 계정자 정보 섹션 */}
+                      <div className="p-3 bg-tds-fill-secondary/60 rounded-tds-m mb-1 flex items-start gap-3 border border-tds-border-default/40">
+                        <LinkAvatar size="md" className="mt-0.5" />
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[14px] font-bold text-tds-text-primary truncate">
+                              {displayName}
+                            </span>
+                            {userName && (
+                              <span className="text-[11px] font-normal text-tds-text-secondary bg-white px-1.5 py-0.5 rounded border border-tds-border-default truncate">
+                                {userName}
+                              </span>
+                            )}
+                          </div>
+                          {user.email && (
+                            <span className="text-[12px] text-tds-text-secondary truncate mt-0.5" title={user.email}>
+                              {user.email}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-mono text-tds-text-disabled truncate mt-1">
+                            UID: {user.uid.slice(0, 10)}...
                           </span>
                         </div>
-                        {user.email && (
-                          <span className="text-[12px] text-tds-text-secondary truncate mt-0.5" title={user.email}>
-                            {user.email}
-                          </span>
-                        )}
-                        <span className="text-[10px] font-mono text-tds-text-disabled truncate mt-1">
-                          UID: {user.uid.slice(0, 10)}...
+                      </div>
+
+                      {/* 2. 내 개인 페이지 이동 메뉴 아이템 */}
+                      <Menu.Item
+                        onClick={() => router.push(`/${encodeURIComponent(displayName)}`)}
+                        className="flex items-center justify-between w-full px-3 py-2.5 rounded-tds-m text-[13px] font-semibold
+                                   text-tds-text-primary hover:bg-tds-fill-secondary transition-colors cursor-pointer outline-none select-none"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <ExternalLink size={16} className="text-tds-blue-600 shrink-0" />
+                          <span>내 공개 페이지 이동</span>
+                        </div>
+                        <span className="text-[11px] font-mono text-tds-blue-600 font-normal bg-blue-50 px-1.5 py-0.5 rounded truncate max-w-[90px]">
+                          /{displayName}
                         </span>
-                      </div>
-                    </div>
+                      </Menu.Item>
 
-                    {/* 2. 내 링크 주소 복사 메뉴 아이템 (클릭 시 1.5초 토스트 UI 창 팝업) */}
-                    <Menu.Item
-                      onClick={handleCopyMyLinkWithSonner}
-                      className="flex items-center justify-between w-full px-3 py-2.5 rounded-tds-m text-[13px] font-semibold
-                                 text-tds-text-primary hover:bg-tds-fill-secondary transition-colors cursor-pointer outline-none select-none"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Copy size={16} className="text-tds-blue-600 shrink-0" />
-                        <span>내 링크 주소 복사</span>
-                      </div>
-                      <span className="text-[11px] text-tds-blue-600 font-normal bg-blue-50 px-1.5 py-0.5 rounded">
-                        공유
-                      </span>
-                    </Menu.Item>
+                      {/* 3. 내 링크 주소 복사 메뉴 아이템 (클릭 시 1.5초 토스트 UI 창 팝업) */}
+                      <Menu.Item
+                        onClick={handleCopyMyLinkWithSonner}
+                        className="flex items-center justify-between w-full px-3 py-2.5 rounded-tds-m text-[13px] font-semibold
+                                   text-tds-text-primary hover:bg-tds-fill-secondary transition-colors cursor-pointer outline-none select-none"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Copy size={16} className="text-tds-blue-600 shrink-0" />
+                          <span>내 링크 주소 복사</span>
+                        </div>
+                        <span className="text-[11px] text-tds-blue-600 font-normal bg-blue-50 px-1.5 py-0.5 rounded">
+                          공유
+                        </span>
+                      </Menu.Item>
 
-                    {/* 구분선 */}
-                    <div className="h-px bg-tds-border-default/60 my-1" />
+                      {/* 구분선 */}
+                      <div className="h-px bg-tds-border-default/60 my-1" />
 
-                    {/* 3. 로그아웃 메뉴 아이템 */}
-                    <Menu.Item
-                      onClick={handleSignOut}
-                      className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-tds-m text-[13px] font-semibold
-                                 text-red-600 hover:bg-red-50 transition-colors cursor-pointer outline-none select-none"
-                    >
-                      <LogOut size={16} className="text-red-500 shrink-0" />
-                      <span>{isActionLoading ? "로그아웃 중..." : "로그아웃"}</span>
-                    </Menu.Item>
+                      {/* 4. 로그아웃 메뉴 아이템 */}
+                      <Menu.Item
+                        onClick={handleSignOut}
+                        className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-tds-m text-[13px] font-semibold
+                                   text-red-600 hover:bg-red-50 transition-colors cursor-pointer outline-none select-none"
+                      >
+                        <LogOut size={16} className="text-red-500 shrink-0" />
+                        <span>{isActionLoading ? "로그아웃 중..." : "로그아웃"}</span>
+                      </Menu.Item>
 
-                  </Menu.Popup>
-                </Menu.Positioner>
-              </Menu.Portal>
-            </Menu.Root>
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.Root>
+            </>
           ) : (
             /* 로그아웃 상태: "Google로 로그인" 버튼 */
             <button

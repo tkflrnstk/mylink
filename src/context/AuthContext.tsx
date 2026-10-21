@@ -54,6 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         uid: currentUser.uid,
         email: currentUser.email,
         displayName: currentUser.email ? currentUser.email.split("@")[0] : (currentUser.displayName || "사용자"),
+        userName: currentUser.displayName || "사용자",
         photoURL: currentUser.photoURL,
         badge: "✨ 마이링크 회원",
         bio: "반갑습니다! 나만의 링크를 실시간으로 관리하는 페이지입니다.",
