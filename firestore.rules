@@ -38,6 +38,12 @@ service cloud.firestore {
     // Subcollection: users/{userId}/profile (하위 호환 및 향후 확장 지원)
     // Document ID: {profileId}
     //
+    // Collection: displayNames
+    // Document ID: {displayName} (고유 닉네임 문자열, 2~30자)
+    // Fields:
+    //   - uid: string (필수, 사용자 ID, 생성자의 auth.uid와 일치)
+    //   - createdAt: timestamp (선택, 등록일시)
+    //
     // ===============================================================
 
     // ===============================================================
@@ -120,6 +126,18 @@ service cloud.firestore {
         (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
+    // displayNames/{displayName} 중복 방지 매핑 문서 유효성 검증
+    function isValidDisplayNameDoc(data, displayName) {
+      let allowedFields = ['uid', 'createdAt'];
+
+      return data.keys().hasOnly(allowedFields) &&
+        data.uid is string &&
+        data.uid == request.auth.uid &&
+        displayName.size() >= 2 &&
+        displayName.size() <= 30 &&
+        (!('createdAt' in data) || data.createdAt is timestamp);
+    }
+
     // ===============================================================
     // Collection Rules
     // ===============================================================
@@ -141,7 +159,7 @@ service cloud.firestore {
       // 삭제: 본인만 삭제 가능
       allow delete: if isOwner(userId);
 
-      // 2. 사용자 링크 서브컬렉션
+      // 사용자 링크 서브컬렉션
       match /links/{linkId} {
         // 읽기: 공개 프로필 페이지에서 방문자가 링크 목록을 볼 수 있어야 하므로 공개 허용
         allow read: if true;
@@ -159,11 +177,28 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
-      // 3. 사용자 프로필 서브컬렉션 (users/{userId}/profile 하위 호환 및 향후 확장용)
+      // 사용자 프로필 서브컬렉션 (users/{userId}/profile 하위 호환 및 향후 확장용)
       match /profile/{profileId} {
         allow read: if true;
         allow write: if isOwner(userId);
       }
+    }
+
+    // 2. Display Name 고유 매핑 컬렉션 (닉네임 중복 방지 전용)
+    match /displayNames/{displayName} {
+      // 읽기: 비로그인 사용자 및 중복 여부 확인(get/list)을 위해 누구나 조회 가능
+      allow read: if true;
+
+      // 생성: 로그인된 사용자가 본인 UID로만 등록 가능하며, 미존재 시에만 생성 허용
+      allow create: if isAuthenticated() &&
+        isValidDisplayNameDoc(request.resource.data, displayName) &&
+        !exists(/databases/$(database)/documents/displayNames/$(displayName));
+
+      // 수정: 닉네임 매핑 문서는 직접 수정 불가 (불변)
+      allow update: if false;
+
+      // 삭제: 닉네임 변경 시 기존 닉네임을 해제할 수 있도록 본인 소유 문서만 삭제 허용
+      allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
     }
 
     // ===============================================================
