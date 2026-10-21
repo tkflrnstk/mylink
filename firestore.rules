@@ -1,0 +1,176 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (Firebase Auth UID와 동일)
+    // Fields:
+    //   - uid: string (필수, 사용자 ID와 일치, 수정 불가)
+    //   - displayName: string (필수, 2~30자, 고유 식별 및 /[displayName] 라우팅용)
+    //   - userName: string | null (선택, 최대 50자, 구글 성명 등)
+    //   - email: string | null (선택, 이메일 형식, 최대 100자)
+    //   - photoURL: string | null (선택, URL 형식 또는 Base64 DataURL 문자열, 최대 600,000자)
+    //   - badge: string | null (선택, 최대 50자)
+    //   - bio: string | null (선택, 최대 500자)
+    //   - createdAt: timestamp (선택, 최초 생성일시, 수정 불가)
+    //   - updatedAt: timestamp (선택, 수정일시)
+    //   - lastLoginAt: timestamp (선택, 최근 로그인 일시)
+    //
+    // Subcollection: users/{userId}/links
+    // Document ID: {linkId}
+    // Fields:
+    //   - title: string (필수, 1~100자)
+    //   - url: string (필수, 7~2048자, http/https URL 형식)
+    //   - subtitle: string | null (선택, 최대 200자)
+    //   - description: string | null (선택, 최대 500자)
+    //   - emoji: string | null (선택, 최대 20자)
+    //   - badge: string | null (선택, 최대 50자)
+    //   - badgeBg: string | null (선택, 최대 100자)
+    //   - order: number/int (선택, 0 이상의 숫자)
+    //   - createdat / createdAt: timestamp (선택, 생성일시, 수정 불가)
+    //   - updatedat / updatedAt: timestamp (선택, 수정일시)
+    //
+    // Subcollection: users/{userId}/profile (하위 호환 및 향후 확장 지원)
+    // Document ID: {profileId}
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // 사용자 로그인 인증 여부 확인
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 문서 소유자 여부 확인 (경로 변수 userId 기준)
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // 유효한 HTTP/HTTPS URL 형식 검증 (7자 이상 2048자 이하)
+    function isValidUrl(url) {
+      return url is string &&
+        url.size() >= 7 &&
+        url.size() <= 2048 &&
+        (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    // 유효한 이메일 형식 검증
+    function isValidEmail(email) {
+      return email is string &&
+        email.size() <= 100 &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators (Validator Function Pattern)
+    // ===============================================================
+
+    // users/{userId} 사용자 프로필 문서 유효성 검증
+    function isValidUser(data, userId) {
+      let allowedFields = [
+        'uid', 'displayName', 'userName', 'email', 'photoURL',
+        'badge', 'bio', 'createdAt', 'updatedAt', 'lastLoginAt'
+      ];
+
+      return data.keys().hasOnly(allowedFields) &&
+        data.uid == userId &&
+        data.displayName is string &&
+        data.displayName.size() >= 2 &&
+        data.displayName.size() <= 30 &&
+        (!('userName' in data) || data.userName == null || (data.userName is string && data.userName.size() <= 50)) &&
+        (!('email' in data) || data.email == null || isValidEmail(data.email)) &&
+        (!('photoURL' in data) || data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 600000)) &&
+        (!('badge' in data) || data.badge == null || (data.badge is string && data.badge.size() <= 50)) &&
+        (!('bio' in data) || data.bio == null || (data.bio is string && data.bio.size() <= 500)) &&
+        (!('createdAt' in data) || data.createdAt is timestamp) &&
+        (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+        (!('lastLoginAt' in data) || data.lastLoginAt is timestamp);
+    }
+
+    // users/{userId}/links/{linkId} 링크 아이템 문서 유효성 검증
+    function isValidLink(data) {
+      let allowedFields = [
+        'title', 'url', 'subtitle', 'description', 'emoji',
+        'badge', 'badgeBg', 'order',
+        'createdat', 'updatedat', 'createdAt', 'updatedAt'
+      ];
+
+      return data.keys().hasOnly(allowedFields) &&
+        data.title is string &&
+        data.title.size() >= 1 &&
+        data.title.size() <= 100 &&
+        isValidUrl(data.url) &&
+        (!('subtitle' in data) || data.subtitle == null || (data.subtitle is string && data.subtitle.size() <= 200)) &&
+        (!('description' in data) || data.description == null || (data.description is string && data.description.size() <= 500)) &&
+        (!('emoji' in data) || data.emoji == null || (data.emoji is string && data.emoji.size() <= 20)) &&
+        (!('badge' in data) || data.badge == null || (data.badge is string && data.badge.size() <= 50)) &&
+        (!('badgeBg' in data) || data.badgeBg == null || (data.badgeBg is string && data.badgeBg.size() <= 100)) &&
+        (!('order' in data) || data.order == null || ((data.order is int || data.order is float) && data.order >= 0)) &&
+        (!('createdat' in data) || data.createdat is timestamp) &&
+        (!('updatedat' in data) || data.updatedat is timestamp) &&
+        (!('createdAt' in data) || data.createdAt is timestamp) &&
+        (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // 1. 사용자 프로필 컬렉션
+    match /users/{userId} {
+      // 읽기: 공개 프로필 페이지 및 /[displayName] 라우팅, 중복 확인 query(where("displayName", "==", ...))를 위해 누구나 조회 가능
+      allow read: if true;
+
+      // 생성: 인증된 본인만 생성 가능, 스키마 검증 통과 필수
+      allow create: if isOwner(userId) && isValidUser(request.resource.data, userId);
+
+      // 수정: 인증된 본인만 수정 가능, uid 및 createdAt 불변, 스키마 검증 통과 필수
+      allow update: if isOwner(userId) &&
+        isValidUser(request.resource.data, userId) &&
+        request.resource.data.uid == resource.data.uid &&
+        (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt);
+
+      // 삭제: 본인만 삭제 가능
+      allow delete: if isOwner(userId);
+
+      // 2. 사용자 링크 서브컬렉션
+      match /links/{linkId} {
+        // 읽기: 공개 프로필 페이지에서 방문자가 링크 목록을 볼 수 있어야 하므로 공개 허용
+        allow read: if true;
+
+        // 생성: 본인만 링크 추가 가능, 링크 데이터 스키마 검증 필수
+        allow create: if isOwner(userId) && isValidLink(request.resource.data);
+
+        // 수정: 본인만 수정 가능, 생성일시(createdat/createdAt) 불변, 스키마 검증 필수
+        allow update: if isOwner(userId) &&
+          isValidLink(request.resource.data) &&
+          (!('createdat' in resource.data) || request.resource.data.createdat == resource.data.createdat) &&
+          (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt);
+
+        // 삭제: 본인만 삭제 가능
+        allow delete: if isOwner(userId);
+      }
+
+      // 3. 사용자 프로필 서브컬렉션 (users/{userId}/profile 하위 호환 및 향후 확장용)
+      match /profile/{profileId} {
+        allow read: if true;
+        allow write: if isOwner(userId);
+      }
+    }
+
+    // ===============================================================
+    // Default Deny Rule
+    // ===============================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
