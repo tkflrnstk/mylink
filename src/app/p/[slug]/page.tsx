@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PAGE_DATA } from "@/data/pages";
@@ -8,11 +9,32 @@ export function generateStaticParams() {
   return Object.keys(PAGE_DATA).map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const page = PAGE_DATA[slug];
-  if (!page) return {};
-  return { title: `${page.title} | MyLink`, description: page.description };
+  if (!page) return { title: "페이지를 찾을 수 없습니다" };
+
+  const title = `${page.title} - ${page.subtitle}`;
+  const description = page.description;
+
+  return {
+    title,
+    description,
+    keywords: [page.title, page.badge, page.subtitle, "마이링크", "MyLink"],
+    openGraph: {
+      title: `${page.title} | MyLink`,
+      description,
+      url: `/p/${slug}`,
+      siteName: "MyLink",
+      locale: "ko_KR",
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${page.title} | MyLink`,
+      description,
+    },
+  };
 }
 
 export default async function DummyPage({ params }: { params: Promise<{ slug: string }> }) {
