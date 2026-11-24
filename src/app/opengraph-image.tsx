@@ -241,7 +241,7 @@ export default async function Image() {
             </span>
           </div>
           <span style={{ fontSize: "14px", color: "#94A3B8", fontWeight: 600 }}>
-            https://mylink.site
+            https://mylink-swart.vercel.app
           </span>
         </div>
       </div>

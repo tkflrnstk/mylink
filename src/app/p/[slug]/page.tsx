@@ -16,6 +16,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const title = `${page.title} - ${page.subtitle}`;
   const description = page.description;
+  const pageUrl = `https://mylink-swart.vercel.app/p/${slug}`;
+  const ogImageUrl = `https://mylink-swart.vercel.app/p/${slug}/opengraph-image`;
 
   return {
     title,
@@ -24,15 +26,24 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       title: `${page.title} | MyLink`,
       description,
-      url: `/p/${slug}`,
+      url: pageUrl,
       siteName: "MyLink",
       locale: "ko_KR",
       type: "article",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${page.title} | MyLink`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: `${page.title} | MyLink`,
       description,
+      images: [ogImageUrl],
     },
   };
 }

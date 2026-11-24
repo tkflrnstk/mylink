@@ -170,7 +170,7 @@ export default async function Image({ params }: Props) {
             </span>
           </div>
           <span style={{ fontSize: "14px", color: "#94A3B8", fontWeight: 600 }}>
-            mylink.site/p/{slug}
+            mylink-swart.vercel.app/p/{slug}
           </span>
         </div>
       </div>

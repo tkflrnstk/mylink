@@ -14,6 +14,8 @@ export async function generateMetadata({ params }: { params: Promise<{ displayNa
 
   const title = `${decodedDisplayName} (@${decodedDisplayName})`;
   const description = `${decodedDisplayName}님의 공식 마이링크 프로필입니다. 흩어져 있던 SNS, 포트폴리오, 작업물을 단 하나의 링크에서 확인해보세요.`;
+  const profileUrl = `https://mylink-swart.vercel.app/${encodeURIComponent(decodedDisplayName)}`;
+  const ogImageUrl = `https://mylink-swart.vercel.app/${encodeURIComponent(decodedDisplayName)}/opengraph-image`;
 
   return {
     title,
@@ -29,15 +31,24 @@ export async function generateMetadata({ params }: { params: Promise<{ displayNa
     openGraph: {
       title: `${decodedDisplayName}님의 마이링크 프로필`,
       description,
-      url: `/${encodeURIComponent(decodedDisplayName)}`,
+      url: profileUrl,
       siteName: "MyLink",
       locale: "ko_KR",
       type: "profile",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${decodedDisplayName}님의 마이링크 프로필`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: `${decodedDisplayName}님의 마이링크 프로필`,
       description,
+      images: [ogImageUrl],
     },
     robots: {
       index: true,

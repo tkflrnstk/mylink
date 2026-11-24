@@ -19,8 +19,7 @@ const siteUrl =
   (process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : undefined) ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ||
-  "http://localhost:3000";
+  "https://mylink-swart.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -54,16 +53,25 @@ export const metadata: Metadata = {
     title: "마이링크 (MyLink) | 나를 표현하는 가장 간단한 프로필 링크",
     description:
       "흩어져 있던 SNS, 포트폴리오, 작업물을 단 하나의 프로필 링크로 모아보세요. 3초 원클릭 시작, 실시간 클릭 통계 및 인라인 편집 제공.",
-    url: "/",
+    url: siteUrl,
     siteName: "MyLink",
     locale: "ko_KR",
     type: "website",
+    images: [
+      {
+        url: `${siteUrl}/opengraph-image`,
+        width: 1200,
+        height: 630,
+        alt: "마이링크 (MyLink) | 나를 표현하는 가장 간단한 프로필 링크",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "마이링크 (MyLink) | 나를 표현하는 가장 간단한 프로필 링크",
     description:
       "흩어져 있던 SNS, 포트폴리오, 작업물을 단 하나의 프로필 링크로 모아보세요. 3초 원클릭 시작, 실시간 통계 분석 제공.",
+    images: [`${siteUrl}/opengraph-image`],
   },
   robots: {
     index: true,

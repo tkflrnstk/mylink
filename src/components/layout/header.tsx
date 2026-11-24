@@ -57,7 +57,7 @@ export function Header() {
 
   // 현재 내 공개 링크 주소 가져오기 (/{displayName})
   const getMyLinkUrl = () => {
-    const base = typeof window !== "undefined" ? window.location.origin : "https://mylink.site";
+    const base = typeof window !== "undefined" ? window.location.origin : "https://mylink-swart.vercel.app";
     return userPublicSlug ? `${base}/${encodeURIComponent(userPublicSlug)}` : base;
   };
 
