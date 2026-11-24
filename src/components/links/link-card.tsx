@@ -3,9 +3,10 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, ArrowRight, Trash2, Pencil, Check, X, Clock } from "lucide-react";
+import { ExternalLink, ArrowRight, Trash2, Pencil, Check, X, Clock, MousePointerClick } from "lucide-react";
 import { cn, formatUpdatedAt } from "@/lib/utils";
 import type { LinkItem, CreateLinkInput } from "@/types/link";
+import { incrementLinkClicks } from "@/lib/links";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -26,17 +27,38 @@ interface LinkCardProps {
   onDelete?: (link: LinkItem) => void;
   /** 읽기 전용 모드 (공개 링크 뷰 등) */
   readOnly?: boolean;
+  /** 소유자 사용자 ID (클릭 수 증가 저장용) */
+  userId?: string;
+  /** 링크 클릭 핸들러 (클릭 수 증가 및 외부 이동) */
+  onLinkClick?: (link: LinkItem) => void;
 }
 
 /**
  * TDS LinkCard — 인라인 편집 및 상시 표시 수정/삭제 버튼 지원
  */
-export function LinkCard({ link, className, onUpdate, onDelete, readOnly = false }: LinkCardProps) {
+export function LinkCard({
+  link,
+  className,
+  onUpdate,
+  onDelete,
+  readOnly = false,
+  userId,
+  onLinkClick,
+}: LinkCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const isExternal = link.url.startsWith("http");
   const formattedUpdatedAt = formatUpdatedAt(link.updatedat || link.updatedAt);
+
+  // 링크 클릭 시 클릭 카운트 증가 핸들러
+  const handleCardLinkClick = () => {
+    if (onLinkClick) {
+      onLinkClick(link);
+    } else if (userId) {
+      incrementLinkClicks(userId, link.id);
+    }
+  };
 
   // 인라인 편집 폼 설정 (추가할 때와 동일한 검증 스키마 및 mode: "onChange")
   const {
@@ -344,6 +366,7 @@ export function LinkCard({ link, className, onUpdate, onDelete, readOnly = false
             href={link.url}
             target={isExternal ? "_blank" : undefined}
             rel="noopener noreferrer"
+            onClick={handleCardLinkClick}
             aria-label={`${link.title} 바로가기`}
             className="flex items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0 outline-none focus-visible:ring-2 focus-visible:ring-tds-border-focused rounded-tds-m"
           >
@@ -394,13 +417,23 @@ export function LinkCard({ link, className, onUpdate, onDelete, readOnly = false
                 </p>
               )}
 
-              {/* 수정된 시각 (Updated at) */}
-              {formattedUpdatedAt && (
-                <div className="flex items-center gap-1 mt-1 text-[11px] leading-[1.25] text-tds-text-disabled">
-                  <Clock size={11} className="shrink-0 text-tds-grey-400" />
-                  <span className="truncate">Updated at {formattedUpdatedAt}</span>
+              {/* 수정된 시각 및 클릭수 (텍스트 없이 아이콘과 숫자만 표시) */}
+              <div className="flex items-center gap-2 mt-1 text-[11px] leading-[1.25] text-tds-text-disabled flex-wrap">
+                {formattedUpdatedAt && (
+                  <div className="flex items-center gap-1">
+                    <Clock size={11} className="shrink-0 text-tds-grey-400" />
+                    <span className="truncate">Updated at {formattedUpdatedAt}</span>
+                  </div>
+                )}
+                {formattedUpdatedAt && <span className="text-tds-grey-300">·</span>}
+                <div
+                  className="inline-flex items-center gap-1 font-semibold text-tds-text-secondary"
+                  aria-label={`클릭수 ${link.clicks ?? 0}`}
+                >
+                  <MousePointerClick size={12} className="shrink-0 text-tds-text-brand" />
+                  <span>{link.clicks ?? 0}</span>
                 </div>
-              )}
+              </div>
             </div>
           </a>
 
@@ -450,6 +483,7 @@ export function LinkCard({ link, className, onUpdate, onDelete, readOnly = false
               href={link.url}
               target={isExternal ? "_blank" : undefined}
               rel="noopener noreferrer"
+              onClick={handleCardLinkClick}
               aria-label={`${link.title} 새 창 열기`}
               className="p-1 text-tds-text-disabled hover:text-tds-text-brand transition-colors shrink-0"
             >

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useUserProfileQuery } from "@/hooks/use-user-profile";
 import { Menu } from "@base-ui/react/menu";
-import { ChevronDown, Copy, Check, LogOut, X, ExternalLink } from "lucide-react";
+import { ChevronDown, Copy, Check, LogOut, X, ExternalLink, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { LinkAvatar } from "@/components/ui/link-avatar";
 
@@ -20,7 +20,11 @@ export function Header() {
       setIsActionLoading(true);
       await signInWithGoogle();
     } catch (error: any) {
-      if (error?.code !== "auth/popup-closed-by-user") {
+      if (
+        error?.code !== "auth/popup-closed-by-user" &&
+        error?.code !== "auth/cancelled-popup-request" &&
+        !error?.message?.includes("popup-closed-by-user")
+      ) {
         console.error("로그인 실패:", error);
         toast.error("Google 로그인 중 오류가 발생했습니다.");
       }
@@ -42,10 +46,19 @@ export function Header() {
     }
   };
 
+  // TanStack Query 프로필 캐시 구독 (낙관적 업데이트 실시간 동기화)
+  const { data: profileQueryData } = useUserProfileQuery(user?.uid);
+  const activeProfile = profileQueryData || userProfile;
+
+  // 표시할 사용자 정보 (TanStack Query 최신 캐시 우선 반영)
+  const userPublicSlug = activeProfile?.displayName || (user?.email ? user.email.split("@")[0] : (user?.displayName || ""));
+  const displayName = activeProfile?.displayName || user?.email?.split("@")[0] || user?.displayName || "사용자";
+  const userName = activeProfile?.userName || user?.displayName || "홍길동";
+
   // 현재 내 공개 링크 주소 가져오기 (/{displayName})
   const getMyLinkUrl = () => {
     const base = typeof window !== "undefined" ? window.location.origin : "https://mylink.site";
-    return displayName ? `${base}/${encodeURIComponent(displayName)}` : base;
+    return userPublicSlug ? `${base}/${encodeURIComponent(userPublicSlug)}` : base;
   };
 
   // '내 링크 주소 복사' 클릭 시 Sonner 토스트 UI 창 (문구: "링크가 복사 되었습니다", 1.5초 후 자동 종료)
@@ -102,14 +115,6 @@ export function Header() {
     );
   };
 
-  // TanStack Query 프로필 캐시 구독 (낙관적 업데이트 실시간 동기화)
-  const { data: profileQueryData } = useUserProfileQuery(user?.uid);
-  const activeProfile = profileQueryData || userProfile;
-
-  // 표시할 사용자 정보 (TanStack Query 최신 캐시 우선 반영)
-  const displayName = activeProfile?.displayName || user?.email?.split("@")[0] || user?.displayName || "사용자";
-  const userName = activeProfile?.userName || user?.displayName || "홍길동";
-
   return (
     <header className="sticky top-0 z-40 w-full border-b border-tds-border-default/80 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex h-14 sm:h-16 max-w-4xl items-center justify-between px-3 sm:px-6">
@@ -140,7 +145,7 @@ export function Header() {
             <>
               {/* 헤더 상단 내 공개 페이지 바로가기 버튼 */}
               <Link
-                href={`/${encodeURIComponent(displayName)}`}
+                href={`/${encodeURIComponent(userPublicSlug || displayName)}`}
                 className="hidden xs:inline-flex sm:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-tds-m bg-white hover:bg-tds-fill-secondary
                            border border-tds-border-default/80 text-tds-text-primary text-[12px] sm:text-[13px] font-semibold
                            transition-all duration-[120ms] shadow-2xs hover:border-tds-border-focused/40 active:scale-[0.98] select-none"
@@ -195,7 +200,7 @@ export function Header() {
 
                       {/* 2. 내 개인 페이지 이동 메뉴 아이템 */}
                       <Menu.Item
-                        onClick={() => router.push(`/${encodeURIComponent(displayName)}`)}
+                        onClick={() => router.push(`/${encodeURIComponent(userPublicSlug || displayName)}`)}
                         className="flex items-center justify-between w-full px-3 py-2.5 rounded-tds-m text-[13px] font-semibold
                                    text-tds-text-primary hover:bg-tds-fill-secondary transition-colors cursor-pointer outline-none select-none"
                       >
@@ -204,7 +209,22 @@ export function Header() {
                           <span>내 공개 페이지 이동</span>
                         </div>
                         <span className="text-[11px] font-mono text-tds-blue-600 font-normal bg-blue-50 px-1.5 py-0.5 rounded truncate max-w-[90px]">
-                          /{displayName}
+                          /{userPublicSlug || displayName}
+                        </span>
+                      </Menu.Item>
+
+                      {/* 3. 통계 페이지 이동 메뉴 아이템 */}
+                      <Menu.Item
+                        onClick={() => router.push("/stats")}
+                        className="flex items-center justify-between w-full px-3 py-2.5 rounded-tds-m text-[13px] font-semibold
+                                   text-tds-text-primary hover:bg-tds-fill-secondary transition-colors cursor-pointer outline-none select-none"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <BarChart3 size={16} className="text-tds-blue-600 shrink-0" />
+                          <span>링크 클릭 통계</span>
+                        </div>
+                        <span className="text-[11px] text-tds-blue-600 font-normal bg-blue-50 px-1.5 py-0.5 rounded">
+                          /stats
                         </span>
                       </Menu.Item>
 

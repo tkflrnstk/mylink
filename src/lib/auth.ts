@@ -29,7 +29,7 @@ googleProvider.setCustomParameters({
 /**
  * Google 소셜 로그인 실행 및 Firestore users/{uid} 동기화
  */
-export async function signInWithGoogle(): Promise<User> {
+export async function signInWithGoogle(): Promise<User | null> {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
@@ -38,7 +38,16 @@ export async function signInWithGoogle(): Promise<User> {
     await syncUserProfileToFirestore(user);
 
     return user;
-  } catch (error) {
+  } catch (error: any) {
+    // 사용자가 로그인 팝업 창을 닫았거나 다른 팝업으로 인해 취소된 경우 정상 처리
+    if (
+      error?.code === "auth/popup-closed-by-user" ||
+      error?.code === "auth/cancelled-popup-request" ||
+      error?.message?.includes("popup-closed-by-user")
+    ) {
+      console.log("사용자가 Google 로그인 팝업 창을 닫았습니다.");
+      return null;
+    }
     console.error("Google 로그인 실패:", error);
     throw error;
   }
@@ -166,26 +175,56 @@ export async function getUserProfileByDisplayName(displayName: string): Promise<
 
     if (nameSnap.exists()) {
       const uid = nameSnap.data().uid;
-      return await getUserProfileFromFirestore(uid);
+      const profile = await getUserProfileFromFirestore(uid);
+      if (profile) return profile;
     }
 
-    // 2. 하위 호환 fallback: users 컬렉션 where 쿼리
+    // 2. 혹시 trimmed가 uid 자체인 경우 직접 조회
+    const directUserSnap = await getDoc(doc(db, "users", trimmed));
+    if (directUserSnap.exists()) {
+      const data = directUserSnap.data() as UserProfile;
+      return {
+        ...data,
+        uid: directUserSnap.id,
+        userName: data.userName || data.displayName || "사용자",
+      };
+    }
+
+    // 3. users 컬렉션 where("displayName", "==", trimmed) 쿼리
     const usersCol = collection(db, "users");
     const q = query(usersCol, where("displayName", "==", trimmed));
     const snap = await getDocs(q);
 
-    if (snap.empty) {
-      return null;
+    if (!snap.empty) {
+      const docSnap = snap.docs[0];
+      const data = docSnap.data() as UserProfile;
+      return {
+        ...data,
+        uid: docSnap.id,
+        userName: data.userName || data.displayName || "사용자",
+      };
     }
 
-    const docSnap = snap.docs[0];
-    const data = docSnap.data() as UserProfile;
-    return {
-      ...data,
-      uid: docSnap.id,
-    };
-  } catch (error) {
+    // 4. 소문자 일치 fallback
+    if (trimmed !== trimmed.toLowerCase()) {
+      const lowerNameRef = doc(db, "displayNames", trimmed.toLowerCase());
+      const lowerNameSnap = await getDoc(lowerNameRef);
+      if (lowerNameSnap.exists()) {
+        const uid = lowerNameSnap.data().uid;
+        return await getUserProfileFromFirestore(uid);
+      }
+    }
+
+    return null;
+  } catch (error: any) {
     console.error("displayName으로 유저 프로필 조회 에러:", error);
+    if (
+      error?.code === "permission-denied" ||
+      error?.message?.includes("insufficient permissions") ||
+      error?.message?.includes("permission-denied")
+    ) {
+      throw error;
+    }
     return null;
   }
 }

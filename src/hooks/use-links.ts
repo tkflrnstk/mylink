@@ -6,6 +6,7 @@ import {
   addLinkToFirestore,
   updateLinkInFirestore,
   deleteLinkFromFirestore,
+  incrementLinkClicks,
 } from "@/lib/links";
 import type { LinkItem, CreateLinkInput } from "@/types/link";
 
@@ -122,6 +123,47 @@ export function useDeleteLinkMutation(userId?: string | null) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: linkKeys.userLinks(userId) });
+    },
+  });
+}
+
+/**
+ * 링크 클릭 수(조회수) 증가 뮤테이션 훅 (낙관적 업데이트 적용)
+ */
+export function useIncrementLinkClicksMutation(userId?: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!userId) return;
+      await incrementLinkClicks(userId, id);
+    },
+    onMutate: async (id) => {
+      if (!userId) return;
+      await queryClient.cancelQueries({ queryKey: linkKeys.userLinks(userId) });
+
+      const previousLinks = queryClient.getQueryData<LinkItem[]>(linkKeys.userLinks(userId));
+
+      if (previousLinks) {
+        queryClient.setQueryData<LinkItem[]>(
+          linkKeys.userLinks(userId),
+          previousLinks.map((item) =>
+            item.id === id ? { ...item, clicks: (item.clicks ?? 0) + 1 } : item
+          )
+        );
+      }
+
+      return { previousLinks };
+    },
+    onError: (_err, _vars, context) => {
+      if (userId && context?.previousLinks) {
+        queryClient.setQueryData(linkKeys.userLinks(userId), context.previousLinks);
+      }
+    },
+    onSettled: () => {
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: linkKeys.userLinks(userId) });
+      }
     },
   });
 }

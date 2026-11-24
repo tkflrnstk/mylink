@@ -14,6 +14,10 @@ interface LinkListProps {
   onDelete?: (link: LinkItem) => void;
   /** 읽기 전용 모드 */
   readOnly?: boolean;
+  /** 사용자 ID (클릭 카운트 저장용) */
+  userId?: string;
+  /** 링크 클릭 핸들러 */
+  onLinkClick?: (link: LinkItem) => void;
 }
 
 /**
@@ -22,7 +26,16 @@ interface LinkListProps {
  * - 시맨틱 `<ul>/<li>` 마크업을 사용합니다.
  * - links 배열이 비어 있으면 빈 상태 메시지를 표시합니다.
  */
-export function LinkList({ links, className, cardClassName, onUpdate, onDelete, readOnly = false }: LinkListProps) {
+export function LinkList({
+  links,
+  className,
+  cardClassName,
+  onUpdate,
+  onDelete,
+  readOnly = false,
+  userId,
+  onLinkClick,
+}: LinkListProps) {
   if (links.length === 0) {
     return (
       <div className="text-center py-10 px-4 bg-white rounded-tds-xl border border-tds-border-default">
@@ -46,6 +59,8 @@ export function LinkList({ links, className, cardClassName, onUpdate, onDelete, 
             onUpdate={onUpdate}
             onDelete={onDelete}
             readOnly={readOnly}
+            userId={userId}
+            onLinkClick={onLinkClick}
           />
         </li>
       ))}

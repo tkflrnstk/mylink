@@ -8,6 +8,7 @@ import {
   onSnapshot,
   serverTimestamp,
   writeBatch,
+  increment,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -58,6 +59,7 @@ export async function addLinkToFirestore(
     emoji: input.emoji || "🔗",
     badge: input.badge || "기타",
     badgeBg: input.badgeBg || "bg-tds-bg-brand-weak text-tds-text-brand",
+    clicks: input.clicks ?? 0,
   });
 
   return docRef.id;
@@ -94,6 +96,7 @@ export async function migrateLocalLinksToFirestore(
         emoji: item.emoji || "🔗",
         badge: item.badge || "기타",
         badgeBg: item.badgeBg || "bg-tds-bg-brand-weak text-tds-text-brand",
+        clicks: item.clicks ?? 0,
         createdat: serverTimestamp(),
         updatedat: serverTimestamp(),
         order: i, // 기본 정렬 순서 보존
@@ -141,6 +144,24 @@ export async function deleteLinkFromFirestore(
 }
 
 /**
+ * Firestore users/{userId}/links에서 링크 클릭 수(조회수) 1 증가
+ */
+export async function incrementLinkClicks(
+  userId: string,
+  id: string
+): Promise<void> {
+  if (!userId || !id) return;
+  try {
+    const docRef = doc(db, "users", userId, "links", id);
+    await updateDoc(docRef, {
+      clicks: increment(1),
+    });
+  } catch (error) {
+    console.error(`링크 클릭 카운트 증가 실패 (users/${userId}/links/${id}):`, error);
+  }
+}
+
+/**
  * Firestore users/{userId}/links 링크 목록 1회 조회
  */
 export async function getFirestoreLinks(userId: string = "anonymous"): Promise<LinkItem[]> {
@@ -158,6 +179,7 @@ export async function getFirestoreLinks(userId: string = "anonymous"): Promise<L
         emoji: data.emoji || "🔗",
         badge: data.badge || "기타",
         badgeBg: data.badgeBg || "bg-tds-bg-brand-weak text-tds-text-brand",
+        clicks: typeof data.clicks === "number" ? data.clicks : 0,
         createdat: data.createdat || data.createdAt,
         updatedat: data.updatedat || data.updatedAt,
         order: data.order,
@@ -211,6 +233,7 @@ export function subscribeFirestoreLinks(
           emoji: data.emoji || "🔗",
           badge: data.badge || "기타",
           badgeBg: data.badgeBg || "bg-tds-bg-brand-weak text-tds-text-brand",
+          clicks: typeof data.clicks === "number" ? data.clicks : 0,
           createdat: data.createdat || data.createdAt,
           updatedat: data.updatedat || data.updatedAt,
           order: data.order,

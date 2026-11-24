@@ -7,6 +7,8 @@ export interface LinkItem {
   emoji?: string;
   badge?: string;
   badgeBg?: string;
+  clicks?: number;
+  order?: number;
   createdAt?: any;
   updatedAt?: any;
   createdat?: any;
@@ -21,4 +23,5 @@ export interface CreateLinkInput {
   emoji?: string;
   badge?: string;
   badgeBg?: string;
+  clicks?: number;
 }

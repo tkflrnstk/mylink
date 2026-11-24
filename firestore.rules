@@ -32,6 +32,7 @@ service cloud.firestore {
     //   - badge: string | null (선택, 최대 50자)
     //   - badgeBg: string | null (선택, 최대 100자)
     //   - order: number/int (선택, 0 이상의 숫자)
+    //   - clicks: number/int (선택, 0 이상의 숫자)
     //   - createdat / createdAt: timestamp (선택, 생성일시, 수정 불가)
     //   - updatedat / updatedAt: timestamp (선택, 수정일시)
     //
@@ -105,7 +106,7 @@ service cloud.firestore {
     function isValidLink(data) {
       let allowedFields = [
         'title', 'url', 'subtitle', 'description', 'emoji',
-        'badge', 'badgeBg', 'order',
+        'badge', 'badgeBg', 'order', 'clicks',
         'createdat', 'updatedat', 'createdAt', 'updatedAt'
       ];
 
@@ -120,10 +121,20 @@ service cloud.firestore {
         (!('badge' in data) || data.badge == null || (data.badge is string && data.badge.size() <= 50)) &&
         (!('badgeBg' in data) || data.badgeBg == null || (data.badgeBg is string && data.badgeBg.size() <= 100)) &&
         (!('order' in data) || data.order == null || ((data.order is int || data.order is float) && data.order >= 0)) &&
+        (!('clicks' in data) || data.clicks == null || ((data.clicks is int || data.clicks is float) && data.clicks >= 0)) &&
         (!('createdat' in data) || data.createdat is timestamp) &&
         (!('updatedat' in data) || data.updatedat is timestamp) &&
         (!('createdAt' in data) || data.createdAt is timestamp) &&
         (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    // 링크 클릭 수(clicks) 단독 증가 업데이트 유효성 검증 (방문자 누구나 조회수 기록 허용)
+    function isValidLinkClicksUpdate() {
+      let diff = request.resource.data.diff(resource.data);
+      return diff.affectedKeys().hasOnly(['clicks']) &&
+        (request.resource.data.clicks is int || request.resource.data.clicks is float) &&
+        request.resource.data.clicks >= 0 &&
+        (!('clicks' in resource.data) || resource.data.clicks == null || request.resource.data.clicks >= resource.data.clicks);
     }
 
     // displayNames/{displayName} 중복 방지 매핑 문서 유효성 검증
@@ -167,11 +178,15 @@ service cloud.firestore {
         // 생성: 본인만 링크 추가 가능, 링크 데이터 스키마 검증 필수
         allow create: if isOwner(userId) && isValidLink(request.resource.data);
 
-        // 수정: 본인만 수정 가능, 생성일시(createdat/createdAt) 불변, 스키마 검증 필수
-        allow update: if isOwner(userId) &&
+        // 수정: 
+        // 1) 본인(소유자): 링크 데이터 스키마 검증 통과 및 생성일시 불변 조건 하에 전체 수정 가능
+        // 2) 방문자(누구나): clicks 필드만 단독으로 증가하는 업데이트 허용 (조회수 카운트 기록용)
+        allow update: if (
+          isOwner(userId) &&
           isValidLink(request.resource.data) &&
           (!('createdat' in resource.data) || request.resource.data.createdat == resource.data.createdat) &&
-          (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt);
+          (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt)
+        ) || isValidLinkClicksUpdate();
 
         // 삭제: 본인만 삭제 가능
         allow delete: if isOwner(userId);

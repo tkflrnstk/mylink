@@ -16,7 +16,7 @@ interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<User>;
+  signInWithGoogle: () => Promise<User | null>;
   logOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -26,9 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   userProfile: null,
   loading: true,
-  signInWithGoogle: async () => {
-    throw new Error("AuthProvider not found");
-  },
+  signInWithGoogle: async () => null,
   logOut: async () => {},
   refreshProfile: async () => {},
   updateProfile: async () => {},
@@ -81,9 +79,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const loggedInUser = await authSignInWithGoogle();
-      setUser(loggedInUser);
-      await fetchProfile(loggedInUser);
+      if (loggedInUser) {
+        setUser(loggedInUser);
+        await fetchProfile(loggedInUser);
+      }
       return loggedInUser;
+    } catch (err: any) {
+      if (
+        err?.code === "auth/popup-closed-by-user" ||
+        err?.code === "auth/cancelled-popup-request"
+      ) {
+        return null;
+      }
+      throw err;
     } finally {
       setLoading(false);
     }
